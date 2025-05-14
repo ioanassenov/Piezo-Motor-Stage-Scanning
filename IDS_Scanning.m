@@ -44,28 +44,25 @@ try
     channelsEnums = channelsHandle.GetEnumValues();
     jogDirectionHandle = motCLI.AssemblyHandle.GetType('Thorlabs.MotionControl.KCube.InertialMotorCLI.InertialMotorJogDirection');
     jogDirectionEnums = jogDirectionHandle.GetEnumValues();
+    PDChannel1 = channelsEnums.GetValue(0); 
+    PDChannel2 = channelsEnums.GetValue(1);
     
     % Zero the actuators
     disp("Zero actuators 1 & 2")
-    device.SetPositionAs(channelsEnums.GetValue(0), 0);
-    device.SetPositionAs(channelsEnums.GetValue(1), 0);
+    device.SetPositionAs(PDChannel1, 0);
+    device.SetPositionAs(PDChannel2, 0);
     
-    % Jog the Actuator
-    disp("Jog actuators 1 & 2 forwards")
-    device.Jog(channelsEnums.GetValue(0), jogDirectionEnums.GetValue(0), timeout_val);
-    device.Jog(channelsEnums.GetValue(1), jogDirectionEnums.GetValue(0), timeout_val);
+    % Move X actuator to position
+    %device.MoveBy(PDchannel1, 1000, timeout_val);
+    device.Jog(PDChannel1, jogDirectionEnums.GetValue(0), timeout_val);
 
 catch e
-    fprintf("Error has caused the program to stop, disconnecting..\n")
-    fprintf(e.identifier);
-    fprintf("\n");
-    fprintf(e.message);
+    disp("Error has caused the program to stop, disconnecting...")
+    disp(e.identifier);
+    disp(e.message);
 end
 
 %Disconnect from controller
 disp("Program ended, disconnecting from controller...")
 device.StopPolling();
 device.Disconnect();
-
-%% Close Simulations (Comment out for real device)
-%SimulationManager.Instance.UninitializeSimulations();
