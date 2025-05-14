@@ -1,15 +1,11 @@
 %% Header
 
-GitHub Repo: https://github.com/Thorlabs/Motion_Control_Examples/tree/main/Matlab
+% Title: Inertial Drive Stage (IDS) Scanning Autosequence
+% Filename: IDS_Scanning.m
+% Author: Ioan Assenov
 
-% Title: KIM101.m
-% Created Date: 2024-01-16
-% Last modified date: 2024-07-02
-% Matlab Version: R2023b
-% Thorlabs DLL version: Kinesis 1.14.44
-%% Notes:
-%
-% Example for the KIM101
+% Based on code from the original THOR Labs Git repository
+% GitHub Repo: https://github.com/Thorlabs/Motion_Control_Examples/tree/main/Matlab
 
 %% Start of code
 clear all; close all; clc
@@ -28,7 +24,7 @@ import Thorlabs.MotionControl.KCube.InertialMotorCLI.*
 DeviceManagerCLI.BuildDeviceList();
 
 % Will need to update serial number to correct device
-serial_num='97100466'; % Serial number for KIM101 controller in Prof. Oldham lab
+serial_num='97100466'; % Serial number for KIM101 controller in Prof. Oldham's lab
 timeout_val=60000;
 
 %Connect to controller
@@ -49,13 +45,15 @@ try
     jogDirectionHandle = motCLI.AssemblyHandle.GetType('Thorlabs.MotionControl.KCube.InertialMotorCLI.InertialMotorJogDirection');
     jogDirectionEnums = jogDirectionHandle.GetEnumValues();
     
-    % Zero the actuator
-    fprintf("Zero the actuator\n")
+    % Zero the actuators
+    disp("Zero actuators 1 & 2")
     device.SetPositionAs(channelsEnums.GetValue(0), 0);
+    device.SetPositionAs(channelsEnums.GetValue(1), 0);
     
     % Jog the Actuator
-    fprintf("Jog the actuator forwards\n")
+    disp("Jog actuators 1 & 2 forwards")
     device.Jog(channelsEnums.GetValue(0), jogDirectionEnums.GetValue(0), timeout_val);
+    device.Jog(channelsEnums.GetValue(1), jogDirectionEnums.GetValue(0), timeout_val);
 
 catch e
     fprintf("Error has caused the program to stop, disconnecting..\n")
@@ -65,6 +63,7 @@ catch e
 end
 
 %Disconnect from controller
+disp("Program ended, disconnecting from controller...")
 device.StopPolling();
 device.Disconnect();
 
