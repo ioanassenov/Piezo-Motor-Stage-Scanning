@@ -9,6 +9,12 @@ made by Thorlabs.
 - `testing.m`      A sandbox file for testing purposes
 - `Documentation/` This directory has documentation PDFs from Thorlabs about the relevant components.
 
+## Hysteresis
+The piezoelectric inertial drive stages exhibit different behaviors moving backward and forward. Forward motion
+is more easily achieved by the Thorlabs PD stages and thus when moving in reverse a larger cycle count is necessary
+to match an equal forward motion. This value can change depending on load configuration. Therefore the
+appropriate jog step counts must be updated in the autosequence.
+
 ## Dependencies
 The code in this repo uses the .NET objects and methods defined in Thorlabs' Kinesis DLLs provided for free
 available on their [website](https://www.thorlabs.com/software_pages/ViewSoftwarePage.cfm?Code=Motion_Control&viewtab=0).
