@@ -37,7 +37,7 @@ try
     
     device.StartPolling(250);
     device.EnableDevice();
-    pause(1) %wait to make sure device is enabled
+    pause(1) %wait to make sure device is enabledded
     
     % Pull the Enums needed
     channelsHandle = motCLI.AssemblyHandle.GetType('Thorlabs.MotionControl.KCube.InertialMotorCLI.InertialMotorStatus+MotorChannels');
@@ -56,10 +56,10 @@ try
     %device.MoveBy(PDchannel1, 1000, timeout_val);
     device.Jog(PDChannel1, jogDirectionEnums.GetValue(0), timeout_val);
 
-catch e
+catch error
     disp("Error has caused the program to stop, disconnecting...")
-    disp(e.identifier);
-    disp(e.message);
+    disp(error.identifier);
+    disp(error.message);
 end
 
 %Disconnect from controller
