@@ -42,10 +42,10 @@ try
     jogDirectionEnums = jogDirectionHandle.GetEnumValues();
     
     % Redefine .NET assembly properties in convenient variables
-    jogFwd = jogDirectionEnums.GetValue(0); % Jog Forward
-    jogRev = jogDirectionEnums.GetValue(1); % Jog Reverse 
-    PD1 = channelsEnums.GetValue(0);
-    PD2 = channelsEnums.GetValue(1);
+    jogFwd = jogDirectionEnums.GetValue(0); % Jog Direction Forward
+    jogRev = jogDirectionEnums.GetValue(1); % Jog Direction Reverse
+    PD1 = channelsEnums.GetValue(0);        % Channel 1 is the x stage
+    PD2 = channelsEnums.GetValue(1);        % Channel 2 is the y stage
     
     % How to extract methods and properties from .NET Assembly:
     % To view assembly methods:    methods(.NET Assembly) or methodsview(.NET Assembly)
