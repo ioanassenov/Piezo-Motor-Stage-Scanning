@@ -11,4 +11,4 @@ made by Thorlabs.
 
 ##### Dependencies
 The code in this repo uses the .NET objects and methods defined in Thorlabs' Kinesis DLLs provided for free
-available on their (website)[https://www.thorlabs.com/software_pages/ViewSoftwarePage.cfm?Code=Motion_Control&viewtab=0].
+available on their [website](https://www.thorlabs.com/software_pages/ViewSoftwarePage.cfm?Code=Motion_Control&viewtab=0).
