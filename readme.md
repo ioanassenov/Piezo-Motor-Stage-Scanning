@@ -15,11 +15,16 @@ is more easily achieved by the Thorlabs PD stages and thus when moving in revers
 to match an equal forward motion. This value can change depending on load configuration. Therefore the
 appropriate jog step counts must be updated in the autosequence.
 
+## Movement
+Movement of the stage is open-loop control when run without limit switches or other sensors.
+The range of motion in the forward direction is about `7200` steps.
+The range of motion in the reverse direction is about `15400` steps.
+
 ## Dependencies & Resources
 The code in this repo uses the .NET objects and methods defined in Thorlabs' Kinesis DLLs provided for free
 available on their [website](https://www.thorlabs.com/software_pages/ViewSoftwarePage.cfm?Code=Motion_Control&viewtab=0).
 
-Within the Kinesis installation directory (default is `C:\Program Files\Thorlabs\Kinesis`) there are two help
-files available for assistance with using the APIs:
-- `Thorlabs.MotionControl.DotNet_API` For help with the .NET API
-- `Thorlabs.MotionControl.C_API` For help with the C API
+Within the Kinesis installation directory (default is `C:\Program Files\Thorlabs\Kinesis`) there are two 
+compiled HTML help files available for assistance with using the APIs:
+- `Thorlabs.MotionControl.DotNet_API.chm` For help with the .NET API
+- `Thorlabs.MotionControl.C_API.chm` For help with the C API
