@@ -84,6 +84,7 @@ try
         move1(-3050);         % Scan along x in opposite direction
         move2(-1*increment); % Move up 1 more row
     end
+    disp("Scan completed!")
 
 catch err
     disp("Error has caused the program to stop, disconnecting...")
