@@ -57,6 +57,7 @@ try
     % device.GetJogParameters(channel)
     % device.SetJogParameters(channel, jogParameters)
     % device.Jog(channel, JogDirection, timeout)
+    % device.MoveTo(channel, int32(stepPosition), timeout)
 
     %% Define movement parameters
     % Define new jog parameters object and configure it
@@ -67,7 +68,7 @@ try
 
     %% Movements
 
-    for c = 1:10
+    for c = 1:1
         fprintf("Loop count: "); disp(c);
         disp("Starting forward jog...");
         device.Jog(PD1, jogFwd, timeout);
@@ -84,7 +85,7 @@ catch error
     disp(error.message);
 end
 
-%Disconnect from controller
-disp("Program completed, disconnecting device...")
-device.StopPolling();
-device.Disconnect();
+% Disconnect from controller
+%disp("Program completed, disconnecting device...")
+%device.StopPolling();
+%device.Disconnect();
