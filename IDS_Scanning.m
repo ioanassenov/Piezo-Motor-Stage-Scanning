@@ -7,10 +7,8 @@
 % Based on code from the original THOR Labs Git repository
 % GitHub Repo: https://github.com/Thorlabs/Motion_Control_Examples/tree/main/Matlab
 
-%% Start of code
-clear all; close all; clc
+clear; close all;
 
-%% Add and Import Assemblies
 devCLI = NET.addAssembly('C:\Program Files\Thorlabs\Kinesis\Thorlabs.MotionControl.DeviceManagerCLI.dll');
 genCLI = NET.addAssembly('C:\Program Files\Thorlabs\Kinesis\Thorlabs.MotionControl.GenericMotorCLI.dll');
 motCLI = NET.addAssembly('C:\Program Files\Thorlabs\Kinesis\Thorlabs.MotionControl.KCube.InertialMotorCLI.dll');
@@ -19,7 +17,6 @@ import Thorlabs.MotionControl.DeviceManagerCLI.*
 import Thorlabs.MotionControl.GenericMotorCLI.*
 import Thorlabs.MotionControl.KCube.InertialMotorCLI.*
 
-%% Connect
 % Builds Device list
 DeviceManagerCLI.BuildDeviceList();
 
@@ -27,7 +24,7 @@ DeviceManagerCLI.BuildDeviceList();
 serial_num='97100466'; % Serial number for KIM101 controller in Prof. Oldham's lab
 timeout=60000;
 
-%Connect to controller
+% Connect to controller
 device = KCubeInertialMotor.CreateKCubeInertialMotor(serial_num);
 device.Connect(serial_num);
 
@@ -56,38 +53,36 @@ try
     device.SetPositionAs(PD1, 0);
     device.SetPositionAs(PD2, 0);
     
-    %% Define movement parameters
-    % Define new jog parameters object and configure it
-    jogParams = Thorlabs.MotionControl.KCube.InertialMotorCLI.JogParams;
-    jogParams.JogStepFwd = 2000;             % Set forward step size
-    jogParams.JogStepRev = 3300;             % Set backward step size (larger value due to reverse movement hysteresis)
-    jogParams.JogRate = 2000;                % Set jog speed (cycles/sec?)
-    device.SetJogParameters(PD1, jogParams); % Apply jog parameters to PD1
+    % % Define movement parameters
+    % % Define new jog parameters object and configure it
+    % jogParams = Thorlabs.MotionControl.KCube.InertialMotorCLI.JogParams;
+    % jogParams.JogStepFwd = 2000;             % Set forward step size
+    % jogParams.JogStepRev = 3300;             % Set backward step size (larger value due to reverse movement hysteresis)
+    % jogParams.JogRate = 2000;                % Set jog speed (cycles/sec?)
+    % device.SetJogParameters(PD1, jogParams); % Apply jog parameters to PD1
+    % jogParams.JogStepRev = 3000;
+    % device.SetJogParameters(PD2, jogParams); % Apply jog parameters to PD2
 
-    jogParams.JogStepRev = 3000;
-    device.SetJogParameters(PD2, jogParams); % Apply jog parameters to PD2
+    % Define convenient MoveBy() function handles
+    move1 = @(steps) device.MoveBy(PD1, int32(steps), timeout);
+    move2 = @(steps) device.MoveBy(PD2, int32(steps), timeout);
 
-    %% Movements
+    % ######################## Movements ########################
+    increment = 100;              % [steps] define the distance y moves after each row is scanned
+    endPos = 4000;                % [steps] maximum y position
+    rowsCount = endPos/increment; % Total number of rows
+    currentRow = 0;
 
-    for y = 1:1
-        for x = 1:1
-            fprintf("Loop count: "); disp(x);
-            disp("Starting forward jog...");
-            device.Jog(PD1, jogFwd, timeout);
-            disp("Finished forward jog.");
-            pause(2);
-            disp("Staring reverse jog...");
-            device.Jog(PD1, jogRev, timeout);
-            disp("Finished reverse jog.");
-        end
-        fprintf("Loop count: "); disp(y);
-            disp("Starting forward jog...");
-            device.Jog(PD2, jogFwd, timeout);
-            disp("Finished forward jog.");
-            pause(2);
-            disp("Staring reverse jog...");
-            device.Jog(PD2, jogRev, timeout);
-            disp("Finished reverse jog.");
+    for ypos = 1:increment*2:endPos
+        currentRow = currentRow + 1;
+        disp(strcat("Scanning row ", string(currentRow), "/", string(rowsCount)));
+        move1(2000);         % Scan along x
+        move2(-1*increment); % Move up 1 row
+
+        currentRow = currentRow + 1;
+        disp(strcat("Scanning row ", string(currentRow), "/", string(rowsCount)));
+        move1(-3050);         % Scan along x in opposite direction
+        move2(-1*increment); % Move up 1 more row
     end
 
 catch err
@@ -96,7 +91,7 @@ catch err
     disp(err.message);
 end
 
-%Disconnect from controller
+%% Disconnect from controller
 disp("Program ended, disconnecting from controller...")
 device.StopPolling();
 device.Disconnect();
