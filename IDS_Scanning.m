@@ -69,11 +69,12 @@ try
 
     % ######################## Movements ########################
     increment = 100;              % [steps] define the distance y moves after each row is scanned
-    endPos = 4000;                % [steps] maximum y position
-    rowsCount = endPos/increment; % Total number of rows
+    endYPos = 4000;                % [steps] maximum y position
+    rowsCount = endYPos/increment; % Total number of rows
     currentRow = 0;
 
-    for ypos = 1:increment*2:endPos
+    % Loop through all rows. Twice the increment is used since two rows are done per loop.
+    for ypos = 1:increment*2:endYPos
         currentRow = currentRow + 1;
         disp(strcat("Scanning row ", string(currentRow), "/", string(rowsCount)));
         move1(2000);         % Scan along x
