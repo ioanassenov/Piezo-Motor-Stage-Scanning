@@ -71,6 +71,7 @@ try
     increment = 100;              % [steps] define the distance y moves after each row is scanned
     endYPos = 4000;                % [steps] maximum y position
     rowsCount = endYPos/increment; % Total number of rows
+    rowWidth = 2000;
     currentRow = 0;
 
     % Loop through all rows. Twice the increment is used since two rows are done per loop.
@@ -82,7 +83,7 @@ try
 
         currentRow = currentRow + 1;
         disp(strcat("Scanning row ", string(currentRow), "/", string(rowsCount)));
-        move1(-3050);         % Scan along x in opposite direction
+        move1(-3850);         % Scan along x in opposite direction
         move2(-1*increment); % Move up 1 more row
     end
     disp("Scan completed!")
