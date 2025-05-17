@@ -16,7 +16,7 @@ to match an equal forward motion. This value can change depending on load config
 appropriate jog step counts must be updated in the autosequence.
 
 ## Movement
-![Pizeo Stage Diagram](assets/stagedirections.psd)
+![Pizeo Stage Diagram](assets/stagedirections.png)
 Movement of the stage is open-loop control when run without limit switches or other sensors.
 The range of motion in the forward direction is about `7200` steps.
 The range of motion in the reverse direction is about `15400` steps.
