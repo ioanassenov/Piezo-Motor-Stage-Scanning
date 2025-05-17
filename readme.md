@@ -16,10 +16,11 @@ to match an equal forward motion. This value can change depending on load config
 appropriate jog step counts must be updated in the autosequence.
 
 ## Movement
-<img src="/assets/stagedirections.png" alt="Stage directions diagram" width="200"/>
-Movement of the stage is open-loop control when run without limit switches or other sensors.
-The range of motion in the forward direction is about `7200` steps.
-The range of motion in the reverse direction is about `15400` steps.
+<img src="/assets/stagedirections.png" alt="Stage directions diagram" width="500"/>
+
+*Note that the xy coordinate system is inertial and is NOT fixed to the stage*
+
+Movement of the stage is open-loop control when run without limit switches or other sensors. The range of motion in the forward direction is about `7200` steps. The range of motion in the reverse direction is about `15400` steps.
 
 ## Dependencies & Resources
 The code in this repo uses the .NET objects and methods defined in Thorlabs' Kinesis DLLs provided for free
