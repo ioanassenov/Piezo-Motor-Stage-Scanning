@@ -25,6 +25,9 @@ Movement of the stage is open-loop control when run without limit switches or ot
 ## Dependencies & Resources
 The code in this repo uses the .NET objects and methods defined in Thorlabs' Kinesis DLLs provided for free
 available on their [website](https://www.thorlabs.com/software_pages/ViewSoftwarePage.cfm?Code=Motion_Control&viewtab=0).
+All required DLL files are included so no additional third-party downloads are required. The **MATLAB Data Acquisition
+Toolbox** is required for data collection.
+
 
 Within the Kinesis installation directory (default is `C:\Program Files\Thorlabs\Kinesis`) there are two 
 compiled HTML help files available for assistance with using the APIs:
