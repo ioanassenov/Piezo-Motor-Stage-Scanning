@@ -49,7 +49,7 @@ ai1 = addinput(dq, dqID, "ai1", "Voltage");
 % T = 10; t = 0:1/dq.Rate:T;
 % V = sin(2*pi*t);
 % data = readwrite(dq, V');
-data = read(dq,seconds(1),"OutputFormat","Matrix");
+data = read(dq, seconds(1), "OutputFormat", "Matrix");
 % save('noisedata200khzfloor',"data")
 
 % Convert standard timetable output to table for easier indexing
