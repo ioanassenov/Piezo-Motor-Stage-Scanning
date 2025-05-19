@@ -5,18 +5,14 @@ clear; close all;
 % This function finds all the DAQ system by National  Instruments (NI)
 d = daqlist("ni")
 
-% This function tells you some brief information on the DAQ. Including the
-% number of inputs and outputs, maximum sampling frequency ......
+% Fetch info about the DAQ (No. inputs/outputs, max sample frequency, etc.)
 deviceinfo1 = d(1,"DeviceInfo")
-
-
 
 % This function creates a DataAcquisition interface object for a National Instruments device
 dq = daq("ni");
 
-% Specify the sampling frequency. If you enter a number higher than the
-% maximum sampling freqeuncy for the DAQ, the maximum sampling frequency
-% will be used instead. 
+% Specify the sampling frequency. The maximum sampling frequency will be
+% used if the assigned value exceeds it.
 dq.Rate = 2e4;
 
 %% I/O Specification
@@ -28,11 +24,7 @@ dq.Rate = 2e4;
 % in the previous section. 
 dqID = "PCIE6374_BNC";
 
-% For both two DAQs, they have 4 input analog channels with voltage input
-% from -10 Volts to 10 Volt. Voltages beyond this range will be clipped.
-% They both have two outputs with the output range from -10 Volts to 10
-% Volts. 
-
+% Define DAQ input and outputs
 ai1 = addinput(dq, dqID, "ai1", "Voltage");
 % ai2 = addinput(dq, daqID, "ai2", "Voltage");
 % ao0 = addoutput(dq, dqID, "ao1", "Voltage");
