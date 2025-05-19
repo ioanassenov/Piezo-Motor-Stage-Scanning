@@ -4,7 +4,7 @@
 % Filename: IDS_Scanning.m
 % Author: Ioan Assenov
 
-% Based on code from the original THOR Labs Git repository
+% Based on code from the original Thorlabs Git repository
 % GitHub Repo: https://github.com/Thorlabs/Motion_Control_Examples/tree/main/Matlab
 
 clear; close all;
