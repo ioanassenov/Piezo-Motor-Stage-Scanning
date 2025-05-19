@@ -6,11 +6,11 @@
 
 %% Add and Import Assemblies
 devCLI = NET.addAssembly('C:\Program Files\Thorlabs\Kinesis\Thorlabs.MotionControl.DeviceManagerCLI.dll');
-genCLI = NET.addAssembly('C:\Program Files\Thorlabs\Kinesis\Thorlabs.MotionControl.GenericMotorCLI.dll');
-motCLI = NET.addAssembly('C:\Program Files\Thorlabs\Kinesis\Thorlabs.MotionControl.KCube.InertialMotorCLI.dll');
+% genCLI = NET.addAssembly('.\kinesis_dlls\Thorlabs.MotionControl.GenericMotorCLI.dll');
+motCLI = NET.addAssembly('kinesis_dlls\Thorlabs.MotionControl.KCube.InertialMotorCLI.dll');
 
 import Thorlabs.MotionControl.DeviceManagerCLI.*
-import Thorlabs.MotionControl.GenericMotorCLI.*
+% import Thorlabs.MotionControl.GenericMotorCLI.*
 import Thorlabs.MotionControl.KCube.InertialMotorCLI.*
 
 %% Connect
