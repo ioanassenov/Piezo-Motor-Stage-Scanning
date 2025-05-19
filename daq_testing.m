@@ -1,4 +1,4 @@
-clear; close all
+clear; close all;
 
 %% DAQ initialization
 
@@ -26,16 +26,16 @@ dq.Rate = 2e4;
 % different. For "OLDHAM3", the name is 'PCI6221_bnc'. For "OLDHAM5", the
 % name is 'PCIE6374_bnc'. You can double check with the "daqlist" function
 % in the previous section. 
+dqID = "PCIE6374_BNC";
 
 % For both two DAQs, they have 4 input analog channels with voltage input
 % from -10 Volts to 10 Volt. Voltages beyond this range will be clipped.
 % They both have two outputs with the output range from -10 Volts to 10
 % Volts. 
 
-ai0 = addinput(dq,'PCI6221_bnc','ai3',"Voltage");
-ai1 = addinput(dq,'PCI6221_bnc','ai1',"Voltage");
-% ai2 = addinput(dq,'PCI6221_bnc','ai2',"Voltage");
-ao0 = addoutput(dq,'PCI6221_bnc','ao1',"Voltage");
+ai1 = addinput(dq, dqID, "ai1", "Voltage");
+% ai2 = addinput(dq, daqID, "ai2", "Voltage");
+% ao0 = addoutput(dq, dqID, "ao1", "Voltage");
 
 %% Data Collection
 
@@ -46,9 +46,10 @@ ao0 = addoutput(dq,'PCI6221_bnc','ao1',"Voltage");
 
 
 % data = read(dq,1000,"OutputFormat","Matrix");
-T = 10; t = 0:1/dq.Rate:T;
-V = sin(2*pi*t);
-data = readwrite(dq,V');
-% data = read(dq,seconds(1),"OutputFormat","Matrix");
+% T = 10; t = 0:1/dq.Rate:T;
+% V = sin(2*pi*t);
+% data = readwrite(dq, V');
+data = read(dq,seconds(1),"OutputFormat","Matrix");
 % save('noisedata200khzfloor',"data")
 
+% Convert standard timetable output to table for easier indexing
