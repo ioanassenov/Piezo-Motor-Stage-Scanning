@@ -3,10 +3,10 @@ clear; close all;
 %% DAQ initialization
 
 % This function finds all the DAQ system by National  Instruments (NI)
-d = daqlist("ni")
+d = daqlist("ni");
 
 % Fetch info about the DAQ (No. inputs/outputs, max sample frequency, etc.)
-deviceinfo1 = d(1,"DeviceInfo")
+deviceinfo1 = d{1,"DeviceInfo"};
 
 % This function creates a DataAcquisition interface object for a National Instruments device
 dq = daq("ni");
@@ -16,32 +16,29 @@ dq = daq("ni");
 dq.Rate = 2e4;
 
 %% I/O Specification
-
-% Below is the functions that setup the inputs and outputs for the DAQ.
-% Depending on the computer you are using, the name of the DAQ is
-% different. For "OLDHAM3", the name is 'PCI6221_bnc'. For "OLDHAM5", the
-% name is 'PCIE6374_bnc'. You can double check with the "daqlist" function
-% in the previous section. 
+% Specify DAQ id, this depends on the PCI card that it is connected to and
+% can be fetched with the daqlist() function.
 dqID = "PCIE6374_BNC";
 
 % Define DAQ input and outputs
-ai1 = addinput(dq, dqID, "ai1", "Voltage");
-% ai2 = addinput(dq, daqID, "ai2", "Voltage");
-% ao0 = addoutput(dq, dqID, "ao1", "Voltage");
+in1 = addinput(dq, dqID, "ai0", "Voltage");
 
 %% Data Collection
-
-% If you have both input and output channels specified, use the function
-% "readwrite". If you only have input channels, use function "read" instead.
-% Below shows an example to output a 1 Hz sine wave while reading from the
-% two input channels. 
-
-
-% data = read(dq,1000,"OutputFormat","Matrix");
-% T = 10; t = 0:1/dq.Rate:T;
-% V = sin(2*pi*t);
-% data = readwrite(dq, V');
-data = read(dq, seconds(1), "OutputFormat", "Matrix");
+% Read data from dq object for given time duration in seconds
+data = read(dq, seconds(1));
 % save('noisedata200khzfloor',"data")
 
-% Convert standard timetable output to table for easier indexing
+% Rename ai0 default name for convenience
+data = renamevars(data, "PCIE6374_BNC_ai0", "ai0");
+
+% Average the data over the time duration
+dataAvg = mean(data.ai0)
+
+%  Laser on, fiber disconnected
+% -4.65 Laser on, fiber pointing at ground
+% -4.6470 Laser on, fiber pointing at black standoff
+
+% When using a sticky note, there appears to be a "maximum" of brightness
+% that occurs when moving the paper closer and further from the prism. This
+% effect is not observed when using a more reflective material (copper
+% foil)
