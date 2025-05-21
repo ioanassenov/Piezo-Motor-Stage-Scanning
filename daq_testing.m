@@ -8,7 +8,7 @@ d = daqlist("ni");
 % Fetch info about the DAQ (No. inputs/outputs, max sample frequency, etc.)
 deviceinfo1 = d{1,"DeviceInfo"};
 
-% This function creates a DataAcquisition interface object for a National Instruments device
+% This function creates a DataAcquisition interface object for an NI device
 dq = daq("ni");
 
 % Specify the sampling frequency. The maximum sampling frequency will be
@@ -32,4 +32,4 @@ data = read(dq, seconds(1));
 data = renamevars(data, "PCIE6374_BNC_ai0", "ai0");
 
 % Average the data over the time duration
-dataAvg = mean(data.ai0)
+dataAvg = mean(data.ai0) 
