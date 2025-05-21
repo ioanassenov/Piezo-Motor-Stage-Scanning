@@ -33,12 +33,3 @@ data = renamevars(data, "PCIE6374_BNC_ai0", "ai0");
 
 % Average the data over the time duration
 dataAvg = mean(data.ai0)
-
-%  Laser on, fiber disconnected
-% -4.65 Laser on, fiber pointing at ground
-% -4.6470 Laser on, fiber pointing at black standoff
-
-% When using a sticky note, there appears to be a "maximum" of brightness
-% that occurs when moving the paper closer and further from the prism. This
-% effect is not observed when using a more reflective material (copper
-% foil)
