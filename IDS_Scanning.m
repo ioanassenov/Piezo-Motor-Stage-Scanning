@@ -1,5 +1,3 @@
-%% Header
-
 % Title: Inertial Drive Stage (IDS) Scanning Autosequence
 % Filename: IDS_Scanning.m
 % Author: Ioan Assenov
@@ -34,7 +32,7 @@ try
     
     device.StartPolling(250);
     device.EnableDevice();
-    pause(1) %wait to make sure device is enabledded
+    pause(1) %wait to make sure device is enabled
     
     % Pull the Enums needed
     channelsHandle = motCLI.AssemblyHandle.GetType('Thorlabs.MotionControl.KCube.InertialMotorCLI.InertialMotorStatus+MotorChannels');
