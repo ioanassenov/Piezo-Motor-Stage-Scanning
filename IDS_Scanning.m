@@ -1,7 +1,7 @@
 % Title: Inertial Drive Stage (IDS) Scanning Autosequence
 % Filename: IDS_Scanning.m
 % Author: Ioan Assenov
-
+%
 % Based on code from the original Thorlabs Git repository
 % GitHub Repo: https://github.com/Thorlabs/Motion_Control_Examples/tree/main/Matlab
 
@@ -32,7 +32,7 @@ try
     
     device.StartPolling(250);
     device.EnableDevice();
-    pause(1) %wait to make sure device is enabled
+    pause(1) % Wait to make sure device is enabled
     
     % Pull the Enums needed
     channelsHandle = motCLI.AssemblyHandle.GetType('Thorlabs.MotionControl.KCube.InertialMotorCLI.InertialMotorStatus+MotorChannels');
