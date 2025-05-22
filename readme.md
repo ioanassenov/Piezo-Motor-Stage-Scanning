@@ -23,9 +23,11 @@ appropriate jog step counts must be updated in the autosequence.
 Movement of the stage is open-loop control when run without limit switches or other sensors. The range of motion in the forward direction is about `7200` steps. The range of motion in the reverse direction is about `15400` steps.
 
 ## Dependencies & Resources
-The code in this repo uses the .NET objects and methods defined in Thorlabs' Kinesis DLLs provided for free
-available on their [website](https://www.thorlabs.com/software_pages/ViewSoftwarePage.cfm?Code=Motion_Control&viewtab=0).
-All required DLL files are included so no additional third-party downloads are required. The **MATLAB Data Acquisition
+The code in this repo uses the .NET objects and methods defined in
+Thorlabs' Kinesis DLLs provided for free available on their
+[website](https://www.thorlabs.com/software_pages/ViewSoftwarePage.cfm?Code=Motion_Control&viewtab=0).
+All required DLL files are included but Kinesis download might still be
+necessary to install the KIM101 USB drivers. The **MATLAB Data Acquisition
 Toolbox** is required for data collection.
 
 
