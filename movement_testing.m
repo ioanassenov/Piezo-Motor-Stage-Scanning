@@ -62,9 +62,18 @@ try
     %% Define movement parameters
     % Define new jog parameters object and configure it
     jogParams = Thorlabs.MotionControl.KCube.InertialMotorCLI.JogParams;
-    jogParams.JogStepFwd = 2000; % Set forward step size
-    jogParams.JogStepRev = 4950; % Set backward step size (larger value due to reverse movement hysteresis)
-    device.SetJogParameters(PD1, jogParams);
+    jogParams.JogStepFwd = 2000;             % Set forward step size
+    jogParams.JogStepRev = 3300;             % Set backward step size (larger value due to reverse movement hysteresis)
+    jogParams.JogRate = 2000;                % Set jog speed (cycles/sec?)
+    device.SetJogParameters(PD1, jogParams); % Apply jog parameters to PD1
+    jogParams.JogStepRev = 3000;
+    device.SetJogParameters(PD2, jogParams); % Apply jog parameters to PD2
+
+    % Define new drive parameters object and configure it
+    driveParams = Thorlabs.MotionControl.KCube.InertialMotorCLI.DriveParams;
+    driveParams.StepRate = 2000;
+    device.SetDriveParameters(PD1, driveParams); % Apply drive parameters to PD1
+    device.SetDriveParameters(PD2, driveParams); % Apply drive parameters to PD2
 
     %% Movements
 
