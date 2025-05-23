@@ -1,5 +1,5 @@
 % Title: Inertial Drive Stage (IDS) Scanning Autosequence
-% Filename: IDS_Scanning.m
+% Filename: ids_scanning_movement.m
 % Author: Ioan Assenov
 %
 % Based on code from the original Thorlabs Git repository
@@ -50,16 +50,6 @@ try
     disp("Zero actuators 1 & 2")
     device.SetPositionAs(PD1, 0);
     device.SetPositionAs(PD2, 0);
-    
-    % % Define movement parameters
-    % % Define new jog parameters object and configure it
-    % jogParams = Thorlabs.MotionControl.KCube.InertialMotorCLI.JogParams;
-    % jogParams.JogStepFwd = 2000;             % Set forward step size
-    % jogParams.JogStepRev = 3300;             % Set backward step size (larger value due to reverse movement hysteresis)
-    % jogParams.JogRate = 2000;                % Set jog speed (cycles/sec?)
-    % device.SetJogParameters(PD1, jogParams); % Apply jog parameters to PD1
-    % jogParams.JogStepRev = 3000;
-    % device.SetJogParameters(PD2, jogParams); % Apply jog parameters to PD2
 
     % Define convenient MoveBy() function handles
     move1 = @(steps) device.MoveBy(PD1, int32(steps), timeout);

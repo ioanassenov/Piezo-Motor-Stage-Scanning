@@ -1,5 +1,5 @@
 % Title: Inertial Drive Stage (IDS) Single Line Test Scan
-% Filename: line_scan.m
+% Filename: row_scan.m
 % Author: Ioan Assenov
 %
 % Description: This file is used as a test to both move the stages and
