@@ -3,7 +3,8 @@
 % Author: Ioan Assenov
 %
 % Description: This file is used as a test to both move the stages and
-% record data from the photomultiplier tube at the same time.
+% record data from the photomultiplier tube at the same time. To scan along
+% a single horizontal line of the target.
 
 clear;
 
