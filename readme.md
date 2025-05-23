@@ -3,10 +3,11 @@
 This repository contains MATLAB code autosequences used to control the
 Piezoelectric Inertial Drive Stages made by Thorlabs.
 
-## Notable Scripts
+## Notable Files
 - `rowcol_scan.m` Scans a target in 2D and generates a heatmap.
 - `movement_testing.m` Contains useful methods and functions for movement.
 - `daq_testing.m` Useful as a guide to understanding how the DAQ API works.
+- `completed_scans/` Directory contains images and matrices of target scans.
 
 
 ## Movement
