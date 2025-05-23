@@ -16,9 +16,10 @@ Piezoelectric Inertial Drive Stages made by Thorlabs.
 *Note that the xy coordinate system is inertial and is NOT fixed to the stage*
 
 Movement of the stage is open-loop control when run without limit switches
-or other sensors. The range of motion in the forward direction is about
-`7200` steps. The range of motion in the reverse direction is about `15400`
-steps.
+or other sensors. With the default speed, the range of motion in the
+forward direction is about `7200` steps. The range of motion in the reverse
+direction is about `15400` steps. This value can change depending on the
+step rate.
 
 ## Hysteresis
 The piezoelectric inertial drive stages exhibit different behaviors moving 

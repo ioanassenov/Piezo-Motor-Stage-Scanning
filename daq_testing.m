@@ -13,7 +13,7 @@ dq = daq("ni");
 
 % Specify the sampling frequency. The maximum sampling frequency will be
 % used if the assigned value exceeds it.
-dq.Rate = 2e4;
+dq.Rate = 2e6;
 
 %% I/O Specification
 % Specify DAQ id, this depends on the PCI card that it is connected to and
@@ -32,4 +32,4 @@ data = read(dq, seconds(1));
 data = renamevars(data, "PCIE6374_BNC_ai0", "ai0");
 
 % Average the data over the time duration
-dataAvg = mean(data.ai0) 
+dataAvg = mean(data.ai0)

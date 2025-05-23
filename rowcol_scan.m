@@ -1,12 +1,13 @@
-% Title: Inertial Drive Stage (IDS) Single Line Test Scan
-% Filename: line_scan.m
+% Title: Inertial Drive Stage 2 Dimensional Scan
+% Filename: rowcol_scan.m
 % Author: Ioan Assenov
 %
 % Description: This file is used as a test to both move the stages and
-% record data from the photomultiplier tube at the same time. To scan along
-% a single horizontal line of the target.
+% record data from the photomultiplier tube at the same time. It scans
+% along a given width and height (in steps) and displays the data in a
+% heatmap visualization
 
-clear;
+clear; clc;
 
 %% DAQ Setup
 dq = daq("ni"); % Initialize a DataAcquisition interface object for an NI device
@@ -67,31 +68,54 @@ try
     move2 = @(steps) device.MoveBy(PD2, int32(steps), timeout);
 
     % ######################## Movements ########################
-    increment = 50;  % [steps] define distance moved between scans on same row and between rows
-    endXPos = 10000; % [steps] define the final X value of the row
-    xerr = 2500;    % [steps] additional steps for reverse motion
-    endYPos = 10000;
+    % To scan a single row, set the endYPos equal to the increment
+
+    increment = 100;  % [steps] define distance moved between scans on same row and between rows
+    endXPos = 10000; % [steps] define the final X value of the rows
+    xerr = 1200;     % [steps] additional steps for reverse motion
+    endYPos = increment*50; % [steps] define the final Y value of the columns
     data = zeros(endYPos/increment, endXPos/increment); % Initialize empty data vector
 
-    % Move through entire X range (subtract increment since we start at 0)
+    % Define total number of rows/columns for convenience
+    totalRows = endYPos / increment;
+    totalCols = endXPos / increment;
+
+    tTotal = tic;       % Start stopwatch
+    start(dq); % Start background data collection
+    % Move through entire row/col range (subtract increment since we start at 0)
     for row = 0:increment:(endYPos-increment)
+        % Define current row number for convenience
+        currentRow = row/increment + 1;
+        
+        tCol = tic;
+        % Begin scanning along row
         for col = 0:increment:(endXPos-increment)
+            % Define current column for convenience
+            currentCol = col/increment + 1;
+           
             % Read the data for 100us, rename the variable for convenience,
             % take the mean value, and store it for the given position.
             rawData = read(dq, seconds(100e-6));
-            rawData = renamevars(rawData, "PCIE6374_BNC_ai0", "ai0");
-            data(row/increment + 1, col/increment + 1) = mean(rawData.ai0);
-            disp(data(row/increment + 1, col/increment + 1))
-            
+            data(currentRow, currentCol) = mean(rawData.PCIE6374_BNC_ai0);
+             
+            % Display location info & reading
+            fprintf("Scanning row: %d/%d | col: %d/%d | data %f V\n", ...
+                currentRow, totalRows, currentCol, totalCols, data(currentRow, currentCol));
+
             % Move the x stage by the defined increment
             move1(increment);
         end
         % Move the x stage back to the beginning before starting new row
         move1(-endXPos - xerr);
-
         % Move the y stage to the next row after completing the x movements
         move2(-increment);
+
+        toc(tCol);
     end
+    
+    % Stop data collection and clean up
+    stop(dq);
+    dq.flush();
     
 catch err
     disp("Error has caused the program to stop, disconnecting...")
@@ -101,11 +125,12 @@ end
 
 %% Disconnect from controller
 disp("Program ended, disconnecting from controller...")
+fprintf("Scanned %d row(s) and %d column(s) in %f seconds.\n", totalRows, totalCols, toc(tTotal))
 device.StopPolling();
 device.Disconnect();
 
-%% Display data in heatmap
-% Create figure with date and time of scan and plot data as heatmap
-figure(Name=string(datetime));
+%% Rotate data and display in heatmap
 data = rot90(data, 2); % Rotate data upside down to match actual target orientation
-heatmap(data);
+% Create figure with date and time of scan and plot data as heatmap
+% figure(Name=string(datetime));
+% heatmap(data);
