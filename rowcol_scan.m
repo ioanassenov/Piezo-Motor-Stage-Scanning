@@ -107,4 +107,5 @@ device.Disconnect();
 %% Display data in heatmap
 % Create figure with date and time of scan and plot data as heatmap
 figure(Name=string(datetime));
+data = rot90(data, 2); % Rotate data upside down to match actual target orientation
 heatmap(data);
