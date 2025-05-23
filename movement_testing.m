@@ -47,17 +47,17 @@ try
     PD1 = channelsEnums.GetValue(0);        % Channel 1 is the x stage
     PD2 = channelsEnums.GetValue(1);        % Channel 2 is the y stage
     
-    % How to extract methods and properties from .NET Assembly:
-    % To view assembly methods:    methods(.NET Assembly) or methodsview(.NET Assembly)
-    % To view assembly properties: properties(.NET Assembly)
-
-    % Compilation of useful functions:
-    % device.GetPosition(channel)
-    % device.GetDriveParameters(channel)
-    % device.GetJogParameters(channel)
-    % device.SetJogParameters(channel, jogParameters)
-    % device.Jog(channel, JogDirection, timeout)
-    % device.MoveTo(channel, int32(stepPosition), timeout)
+    % % How to extract methods and properties from .NET Assembly:
+    % % To view assembly methods:    methods(.NET Assembly) or methodsview(.NET Assembly)
+    % % To view assembly properties: properties(.NET Assembly)
+    % 
+    % % Compilation of useful functions:
+    % % device.GetPosition(channel)
+    % % device.GetDriveParameters(channel)
+    % % device.GetJogParameters(channel)
+    % % device.SetJogParameters(channel, jogParameters)
+    % % device.Jog(channel, JogDirection, timeout)
+    % % device.MoveTo(channel, int32(stepPosition), timeout)
 
     %% Define movement parameters
     % Define new jog parameters object and configure it
@@ -74,6 +74,10 @@ try
     driveParams.StepRate = 2000;
     device.SetDriveParameters(PD1, driveParams); % Apply drive parameters to PD1
     device.SetDriveParameters(PD2, driveParams); % Apply drive parameters to PD2
+
+    % Define convenient MoveBy() function handles
+    move1 = @(steps) device.MoveBy(PD1, int32(steps), timeout);
+    move2 = @(steps) device.MoveBy(PD2, int32(steps), timeout);
 
     %% Movements
 
@@ -94,7 +98,7 @@ catch error
     disp(error.message);
 end
 
-% Disconnect from controller
-%disp("Program completed, disconnecting device...")
-%device.StopPolling();
-%device.Disconnect();
+%% Disconnect from controller
+disp("Program completed, disconnecting device...")
+device.StopPolling();
+device.Disconnect();
