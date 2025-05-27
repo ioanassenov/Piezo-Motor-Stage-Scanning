@@ -11,9 +11,13 @@ clear; clc;
 
 %% DAQ Setup
 dq = daq("ni"); % Initialize a DataAcquisition interface object for an NI device
-dq.Rate = 2e6;  % Set rate (Hertz)
-dqID = "PCIE6374_BNC"; % DAQ ID number is based on the PCI card
-in1 = addinput(dq, dqID, "ai0", "Voltage"); % Create input channel that we read data from
+dq.Rate = 250e3;         % Set rate [Hz] - 2e6 with OLDHAM5 and 250e3 with OLDHAM3
+sampleTime = 800e-6;     % Duration of time over which to average readings for scanning [sec]
+% dqID = "PCIE6374_BNC"; % (OLDHAM5 Computer)
+dqID = "PCI6221_bnc";    % (OLDHAM3 Computer)
+ainPin = "ai0";
+in1 = addinput(dq, dqID, ainPin, "Voltage"); % Create input channel that we read data from
+varName = dqID + "_" + ainPin; % Assemble variable name of input for conveninent table indexing
 
 %% Stage Movement Setup
 devCLI = NET.addAssembly(fullfile(pwd, "kinesis_dlls\Thorlabs.MotionControl.DeviceManagerCLI.dll"));
@@ -47,8 +51,8 @@ try
     channelsEnums = channelsHandle.GetEnumValues();
     
     % Redefine .NET assembly properties in convenient variables
-    PD1 = channelsEnums.GetValue(0);        % Channel 1 is the x stage
-    PD2 = channelsEnums.GetValue(1);        % Channel 2 is the y stage
+    PD1 = channelsEnums.GetValue(0); % Channel 1 is the x stage
+    PD2 = channelsEnums.GetValue(1); % Channel 2 is the y stage
     
     % Zero the actuators
     disp("Zero actuators 1 & 2")
@@ -80,15 +84,18 @@ try
     totalRows = endYPos / increment;
     totalCols = endXPos / increment;
 
-    tTotal = tic; % Start stopwatch
+    tTotal = tic; % Start overall stopwatch
+
+    % Begin Data Collection
+    start(dq);
 
     % Move through entire row/col range (subtract increment since we start at 0)
     for row = 0:increment:(endYPos-increment)
-        
+        tRow = tic; % (Re)start row stopwatch
+
         % Define current row number for convenience
         currentRow = row/increment + 1;
         
-        tRow = tic;
         % Begin scanning along row
         for col = 0:increment:(endXPos-increment)
             % Define current column for convenience
@@ -96,8 +103,8 @@ try
            
             % Read the data for 100us, rename the variable for convenience,
             % take the mean value, and store it for the given position.
-            rawData = read(dq, seconds(100e-6));
-            data(currentRow, currentCol) = mean(rawData.PCIE6374_BNC_ai0);
+            rawData = read(dq, seconds(sampleTime));
+            data(currentRow, currentCol) = mean(rawData{:, varName});
              
             % Display location info & reading
             fprintf("Scanning row: %d/%d | col: %d/%d | data %f V\n", ...
@@ -111,14 +118,16 @@ try
         % Move the y stage to the next row after completing the x movements
         move2(-increment);
         
+        % Take row time, calculate remaining time to completion and display
         rowTime = toc(tRow);
-        estRemaining = toc(tRow) * (totalRows-currentRow)
-        fprintf("Finished scanning row %d in %f seconds, approx. %dm %ds remaining", currentRow, rowTime, int16(estRemaining/60), int16(mod(estRemaining, 60)));
-        % Stop data collection and clean up
-        stop(dq);
-        dq.flush();
-        dq.flush(); % Flush accumulated data to help speed up  
+        estRemaining = toc(tRow) * (totalRows-currentRow);
+        fprintf("Row %d scanned in %f seconds, approx. %dm %ds remaining\n", ...
+            currentRow, rowTime, int16(estRemaining/60), int16(mod(estRemaining, 60)));
     end
+
+    % Stop data collection and clean up
+    stop(dq);
+    dq.flush();
     
 catch err
     disp("Error has caused the program to stop, disconnecting...")
