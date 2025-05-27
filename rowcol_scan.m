@@ -73,10 +73,11 @@ try
     % ######################## Movements ########################
     % To scan a single row, set the endYPos equal to the increment
 
-    increment = 100;  % [steps] define distance moved between scans on same row and between rows
+    increment = 50;  % [steps] define distance moved between scans on same row and between rows
     endXPos = 11500;  % [steps] define the final X value of the rows
     xerr = 0;         % [steps] additional steps for reverse motion
     endYPos = 11000; % [steps] define the final Y value of the columns
+    % endYPos = increment; % [steps] single row scan
 
     data = zeros(endYPos/increment, endXPos/increment); % Initialize empty data vector
 
@@ -87,7 +88,7 @@ try
     tTotal = tic; % Start overall stopwatch
 
     % Begin Data Collection
-    start(dq);
+    start(dq, "continuous");
 
     % Move through entire row/col range (subtract increment since we start at 0)
     for row = 0:increment:(endYPos-increment)
@@ -107,8 +108,8 @@ try
             data(currentRow, currentCol) = mean(rawData{:, varName});
              
             % Display location info & reading
-            fprintf("Scanning row: %d/%d | col: %d/%d | data %f V\n", ...
-                currentRow, totalRows, currentCol, totalCols, data(currentRow, currentCol));
+            % fprintf("Scanning row: %d/%d | col: %d/%d | data %f V\n", ...
+            %     currentRow, totalRows, currentCol, totalCols, data(currentRow, currentCol));
 
             % Move the x stage by the defined increment
             move1(increment);
@@ -121,13 +122,13 @@ try
         % Take row time, calculate remaining time to completion and display
         rowTime = toc(tRow);
         estRemaining = toc(tRow) * (totalRows-currentRow);
-        fprintf("Row %d scanned in %f seconds, approx. %dm %ds remaining\n", ...
-            currentRow, rowTime, int16(estRemaining/60), int16(mod(estRemaining, 60)));
+        fprintf("\nRow %d/%d scanned in %f seconds, ~%dm %ds remaining\n\n", ...
+            currentRow, totalRows, rowTime, int16(estRemaining/60), int16(mod(estRemaining, 60)));
     end
 
     % Stop data collection and clean up
     stop(dq);
-    dq.flush();
+    flush(dq);
     
 catch err
     disp("Error has caused the program to stop, disconnecting...")
