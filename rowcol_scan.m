@@ -27,7 +27,6 @@ import Thorlabs.MotionControl.KCube.InertialMotorCLI.*
 % Builds Device list
 DeviceManagerCLI.BuildDeviceList();
 
-% Will need to update serial number to correct device
 serialNum = '97100466'; % Serial number for KIM101 controller in Prof. Oldham's lab
 timeout = 60000; % Movement timeout before skippnig (milliseconds?)
 
@@ -71,23 +70,25 @@ try
     % To scan a single row, set the endYPos equal to the increment
 
     increment = 100;  % [steps] define distance moved between scans on same row and between rows
-    endXPos = 10000; % [steps] define the final X value of the rows
-    xerr = 1200;     % [steps] additional steps for reverse motion
-    endYPos = increment*50; % [steps] define the final Y value of the columns
+    endXPos = 11500;  % [steps] define the final X value of the rows
+    xerr = 0;         % [steps] additional steps for reverse motion
+    endYPos = 11000; % [steps] define the final Y value of the columns
+
     data = zeros(endYPos/increment, endXPos/increment); % Initialize empty data vector
 
     % Define total number of rows/columns for convenience
     totalRows = endYPos / increment;
     totalCols = endXPos / increment;
 
-    tTotal = tic;       % Start stopwatch
-    start(dq); % Start background data collection
+    tTotal = tic; % Start stopwatch
+
     % Move through entire row/col range (subtract increment since we start at 0)
     for row = 0:increment:(endYPos-increment)
+        
         % Define current row number for convenience
         currentRow = row/increment + 1;
         
-        tCol = tic;
+        tRow = tic;
         % Begin scanning along row
         for col = 0:increment:(endXPos-increment)
             % Define current column for convenience
@@ -109,13 +110,15 @@ try
         move1(-endXPos - xerr);
         % Move the y stage to the next row after completing the x movements
         move2(-increment);
-
-        toc(tCol);
+        
+        rowTime = toc(tRow);
+        estRemaining = toc(tRow) * (totalRows-currentRow)
+        fprintf("Finished scanning row %d in %f seconds, approx. %dm %ds remaining", currentRow, rowTime, int16(estRemaining/60), int16(mod(estRemaining, 60)));
+        % Stop data collection and clean up
+        stop(dq);
+        dq.flush();
+        dq.flush(); % Flush accumulated data to help speed up  
     end
-    
-    % Stop data collection and clean up
-    stop(dq);
-    dq.flush();
     
 catch err
     disp("Error has caused the program to stop, disconnecting...")
@@ -123,14 +126,15 @@ catch err
     disp(err.message);
 end
 
+%% Rotate data and display in heatmap
+data = rot90(data, 2); % Rotate data upside down to match actual target orientation
+% Create figure with date and time of scan and plot data as heatmap
+% figure(Name=string(datetime));
+% h = heatmap(data);
+% h.GridVisible = "off";
+
 %% Disconnect from controller
 disp("Program ended, disconnecting from controller...")
 fprintf("Scanned %d row(s) and %d column(s) in %f seconds.\n", totalRows, totalCols, toc(tTotal))
 device.StopPolling();
 device.Disconnect();
-
-%% Rotate data and display in heatmap
-data = rot90(data, 2); % Rotate data upside down to match actual target orientation
-% Create figure with date and time of scan and plot data as heatmap
-% figure(Name=string(datetime));
-% heatmap(data);

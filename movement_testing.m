@@ -102,6 +102,6 @@ catch error
 end
 
 %% Disconnect from controller
-disp("Program completed, disconnecting device...")
-device.StopPolling();
-device.Disconnect();
+% disp("Program completed, disconnecting device...")
+% device.StopPolling();
+% device.Disconnect();
