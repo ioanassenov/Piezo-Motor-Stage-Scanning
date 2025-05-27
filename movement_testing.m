@@ -42,8 +42,8 @@ try
     jogDirectionEnums = jogDirectionHandle.GetEnumValues();
     
     % Redefine .NET assembly properties in convenient variables
-    jogFwd = jogDirectionEnums.GetValue(0); % Jog Direction Forward
-    jogRev = jogDirectionEnums.GetValue(1); % Jog Direction Reverse
+    jogDirFwd = jogDirectionEnums.GetValue(0); % Jog Direction Forward
+    jogDirRev = jogDirectionEnums.GetValue(1); % Jog Direction Reverse
     PD1 = channelsEnums.GetValue(0);        % Channel 1 is the x stage
     PD2 = channelsEnums.GetValue(1);        % Channel 2 is the y stage
     
@@ -63,7 +63,7 @@ try
     % Define new jog parameters object and configure it
     jogParams = Thorlabs.MotionControl.KCube.InertialMotorCLI.JogParams;
     jogParams.JogStepFwd = 2000;             % Set forward step size
-    jogParams.JogStepRev = 3300;             % Set backward step size (larger value due to reverse movement hysteresis)
+    jogParams.JogStepRev = 2000;             % Set backward step size (larger value due to reverse movement hysteresis)
     jogParams.JogRate = 2000;                % Set jog speed (cycles/sec?)
     device.SetJogParameters(PD1, jogParams); % Apply jog parameters to PD1
     jogParams.JogStepRev = 3000;
@@ -75,6 +75,9 @@ try
     device.SetDriveParameters(PD1, driveParams); % Apply drive parameters to PD1
     device.SetDriveParameters(PD2, driveParams); % Apply drive parameters to PD2
 
+    % Define convenient Jog() function handles
+    jogFwd = @(channel) device.Jog(channel, jogDirFwd, timeout);
+    jogRev = @(channel) device.Jog(channel, jogDirRev, timeout);
     % Define convenient MoveBy() function handles
     move1 = @(steps) device.MoveBy(PD1, int32(steps), timeout);
     move2 = @(steps) device.MoveBy(PD2, int32(steps), timeout);
@@ -84,11 +87,11 @@ try
     for c = 1:1
         fprintf("Loop count: "); disp(c);
         disp("Starting forward jog...");
-        device.Jog(PD1, jogFwd, timeout);
+        jogFwd(PD1)
         disp("Finished forward jog.");
         pause(2);
         disp("Staring reverse jog...");
-        device.Jog(PD1, jogRev, timeout);
+        jogRev(PD1);
         disp("Finished reverse jog.");
     end
 
