@@ -11,10 +11,10 @@ clear; clc;
 
 %% DAQ Setup
 dq = daq("ni"); % Initialize a DataAcquisition interface object for an NI device
-dq.Rate = 250e3;         % Set rate [Hz] - 2e6 with OLDHAM5 and 250e3 with OLDHAM3
-sampleTime = 800e-6;     % Duration of time over which to average readings for scanning [sec]
-% dqID = "PCIE6374_BNC"; % (OLDHAM5 Computer)
-dqID = "PCI6221_bnc";    % (OLDHAM3 Computer)
+dq.Rate = 250e3;       % Set rate [Hz] - 2e6 with OLDHAM5 and 250e3 with OLDHAM3
+sampleTime = 1e-3;     % Duration of time over which to average readings for scanning [sec]
+dqID = "PCIE6374_BNC"; % (OLDHAM5 Computer)
+% dqID = "PCI6221_bnc";    % (OLDHAM3 Computer)
 ainPin = "ai0";
 in1 = addinput(dq, dqID, ainPin, "Voltage"); % Create input channel that we read data from
 varName = dqID + "_" + ainPin; % Assemble variable name of input for conveninent table indexing
@@ -76,8 +76,8 @@ try
     increment = 50;  % [steps] define distance moved between scans on same row and between rows
     endXPos = 11500;  % [steps] define the final X value of the rows
     xerr = 0;         % [steps] additional steps for reverse motion
-    endYPos = 11000; % [steps] define the final Y value of the columns
-    % endYPos = increment; % [steps] single row scan
+    % endYPos = 11000; % [steps] define the final Y value of the columns
+    endYPos = increment; % [steps] single row scan
 
     data = zeros(endYPos/increment, endXPos/increment); % Initialize empty data vector
 
@@ -108,11 +108,12 @@ try
             data(currentRow, currentCol) = mean(rawData{:, varName});
              
             % Display location info & reading
-            % fprintf("Scanning row: %d/%d | col: %d/%d | data %f V\n", ...
-            %     currentRow, totalRows, currentCol, totalCols, data(currentRow, currentCol));
+            fprintf("Scanning row: %d/%d | col: %d/%d | data %f V\n", ...
+                currentRow, totalRows, currentCol, totalCols, data(currentRow, currentCol));
 
             % Move the x stage by the defined increment
             move1(increment);
+            pause(0.001)
         end
         % Move the x stage back to the beginning before starting new row
         move1(-endXPos - xerr);
@@ -122,14 +123,13 @@ try
         % Take row time, calculate remaining time to completion and display
         rowTime = toc(tRow);
         estRemaining = toc(tRow) * (totalRows-currentRow);
-        fprintf("\nRow %d/%d scanned in %f seconds, ~%dm %ds remaining\n\n", ...
+        fprintf("\nRow %d/%d scanned in %f seconds. ~%dm %ds remaining.\n\n", ...
             currentRow, totalRows, rowTime, int16(estRemaining/60), int16(mod(estRemaining, 60)));
     end
 
     % Stop data collection and clean up
     stop(dq);
-    flush(dq);
-    
+        
 catch err
     disp("Error has caused the program to stop, disconnecting...")
     disp(err.identifier);
