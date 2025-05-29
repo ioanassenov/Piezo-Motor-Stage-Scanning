@@ -23,7 +23,7 @@ dqID = "PCIE6374_BNC";
 % Define DAQ input and outputs
 in1 = addinput(dq, dqID, "ai0", "Voltage");
 
-%% Data Collection
+%% Data Collection (Single)
 % Read data from dq object for given time duration in seconds
 data = read(dq, seconds(1));
 % save('noisedata200khzfloor',"data")
@@ -33,3 +33,8 @@ data = renamevars(data, "PCIE6374_BNC_ai0", "ai0");
 
 % Average the data over the time duration
 dataAvg = mean(data.ai0)
+
+%% Data Collection (Continuous)
+start(dq, "continuous");
+for i=0:1:100
+    
