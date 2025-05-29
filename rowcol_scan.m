@@ -13,6 +13,7 @@ clear; clc;
 dq = daq("ni"); % Initialize a DataAcquisition interface object for an NI device
 dq.Rate = 250e3;       % Set rate [Hz] - 2e6 with OLDHAM5 and 250e3 with OLDHAM3
 sampleTime = 1e-3;     % Duration of time over which to average readings for scanning [sec]
+sampleScans = sampleTime*dq.Rate; % Number of samples over which to collect running average
 dqID = "PCIE6374_BNC"; % (OLDHAM5 Computer)
 % dqID = "PCI6221_bnc";    % (OLDHAM3 Computer)
 ainPin = "ai0";
@@ -73,9 +74,9 @@ try
     % ######################## Movements ########################
     % To scan a single row, set the endYPos equal to the increment
 
-    increment = 50;  % [steps] define distance moved between scans on same row and between rows
-    endXPos = 11500;  % [steps] define the final X value of the rows
-    xerr = 0;         % [steps] additional steps for reverse motion
+    increment = 50;    % [steps] define distance moved between scans on same row and between rows
+    endXPos = 11500;   % [steps] define the final X value of the rows
+    xerr = 0;          % [steps] additional steps for reverse motion
     % endYPos = 11000; % [steps] define the final Y value of the columns
     endYPos = increment; % [steps] single row scan
 
@@ -87,25 +88,22 @@ try
 
     tTotal = tic; % Start overall stopwatch
 
-    % Begin Data Collection
-    start(dq, "continuous");
-
     % Move through entire row/col range (subtract increment since we start at 0)
     for row = 0:increment:(endYPos-increment)
         tRow = tic; % (Re)start row stopwatch
 
         % Define current row number for convenience
         currentRow = row/increment + 1;
-        
+     
         % Begin scanning along row
         for col = 0:increment:(endXPos-increment)
             % Define current column for convenience
             currentCol = col/increment + 1;
            
-            % Read the data for 100us, rename the variable for convenience,
-            % take the mean value, and store it for the given position.
-            rawData = read(dq, seconds(sampleTime));
-            data(currentRow, currentCol) = mean(rawData{:, varName});
+            % Read the data for 100us take the mean value, and store it
+            % for the given position.
+            rawData = read(dq, seconds(sampleTime), OutputFormat="Matrix");
+            data(currentRow, currentCol) = mean(rawData);
              
             % Display location info & reading
             fprintf("Scanning row: %d/%d | col: %d/%d | data %f V\n", ...
@@ -113,10 +111,10 @@ try
 
             % Move the x stage by the defined increment
             move1(increment);
-            pause(0.001)
         end
+
         % Move the x stage back to the beginning before starting new row
-        move1(-endXPos - xerr);
+        move1(-endXPos-xerr);
         % Move the y stage to the next row after completing the x movements
         move2(-increment);
         
@@ -126,9 +124,6 @@ try
         fprintf("\nRow %d/%d scanned in %f seconds. ~%dm %ds remaining.\n\n", ...
             currentRow, totalRows, rowTime, int16(estRemaining/60), int16(mod(estRemaining, 60)));
     end
-
-    % Stop data collection and clean up
-    stop(dq);
         
 catch err
     disp("Error has caused the program to stop, disconnecting...")
@@ -139,12 +134,16 @@ end
 %% Rotate data and display in heatmap
 data = rot90(data, 2); % Rotate data upside down to match actual target orientation
 % Create figure with date and time of scan and plot data as heatmap
-% figure(Name=string(datetime));
-% h = heatmap(data);
-% h.GridVisible = "off";
+figure(Name=string(datetime));
+h = heatmap(data);
+h.GridVisible = "off";
 
 %% Disconnect from controller
 disp("Program ended, disconnecting from controller...")
 fprintf("Scanned %d row(s) and %d column(s) in %f seconds.\n", totalRows, totalCols, toc(tTotal))
 device.StopPolling();
 device.Disconnect();
+
+% Stop data collection and clean up
+stop(dq);
+flush(dq);
