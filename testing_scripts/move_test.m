@@ -1,13 +1,13 @@
 %% Header
 
-% Title: Sandbox file for testing purposes
-% Filename: movement_testing.m
+% Title: Sandbox file for movement testing purposes
+% Filename: movement_test.m
 % Author: Ioan Assenov
 
 %% Add and Import Assemblies
-devCLI = NET.addAssembly(fullfile(pwd, "kinesis_dlls\Thorlabs.MotionControl.DeviceManagerCLI.dll"));
-genCLI = NET.addAssembly(fullfile(pwd, "kinesis_dlls\Thorlabs.MotionControl.GenericMotorCLI.dll"));
-motCLI = NET.addAssembly(fullfile(pwd, "kinesis_dlls\Thorlabs.MotionControl.KCube.InertialMotorCLI.dll"));
+devCLI = NET.addAssembly(fullfile(pwd, "..\kinesis_dlls\Thorlabs.MotionControl.DeviceManagerCLI.dll"));
+genCLI = NET.addAssembly(fullfile(pwd, "..\kinesis_dlls\Thorlabs.MotionControl.GenericMotorCLI.dll"));
+motCLI = NET.addAssembly(fullfile(pwd, "..\kinesis_dlls\Thorlabs.MotionControl.KCube.InertialMotorCLI.dll"));
 
 import Thorlabs.MotionControl.DeviceManagerCLI.*
 import Thorlabs.MotionControl.GenericMotorCLI.*
@@ -84,16 +84,7 @@ try
 
     %% Movements
 
-    for c = 1:1
-        fprintf("Loop count: "); disp(c);
-        disp("Starting forward jog...");
-        jogFwd(PD1)
-        disp("Finished forward jog.");
-        pause(2);
-        disp("Staring reverse jog...");
-        jogRev(PD1);
-        disp("Finished reverse jog.");
-    end
+    
 
 catch error
     disp("Error has caused the program to stop, disconnecting...")
