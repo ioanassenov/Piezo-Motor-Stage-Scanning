@@ -1,3 +1,9 @@
+%% Header
+
+% Filename: scan_test.m
+% Author: Ioan Assenov
+% Description: Sandbox file for simultaneous movement and DAQ testing purposes
+
 clear;
 
 %% DAQ Setup
@@ -48,14 +54,9 @@ move1 = @(steps) device.MoveBy(PD1, int32(steps), timeout);
 move2 = @(steps) device.MoveBy(PD2, int32(steps), timeout);
 
 %% Useful variables
-increment = 50;  % [steps] define distance moved between scans on same row and between rows
+increment = 50;   % [steps] define distance moved between scans on same row and between rows
 endXPos = 11500;  % [steps] define the final X value of the rows
 xerr = 0;         % [steps] additional steps for reverse motion
-
-
-
-
-
 
 
 %% Code

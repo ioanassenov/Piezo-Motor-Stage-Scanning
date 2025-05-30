@@ -1,7 +1,7 @@
 %% Header
 
 % Title: Sandbox file for movement testing purposes
-% Filename: movement_test.m
+% Filename: move_test.m
 % Author: Ioan Assenov
 
 %% Add and Import Assemblies

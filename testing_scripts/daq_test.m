@@ -1,4 +1,11 @@
-clear; close all;
+%% Header
+
+% Filename: daq_test.m
+% Author: Ioan Assenov
+% Description: Sandbox file for DAQ testing purposes heavily based on
+% original file by Yiwei
+
+clear;
 
 %% DAQ initialization
 
