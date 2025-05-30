@@ -4,16 +4,17 @@
 %
 % Description: This file is used as a test to both move the stages and
 % record data from the photomultiplier tube at the same time. It scans
-% along a given width and height (in steps) and displays the data in a
-% heatmap visualization while collecting data continuously
+% along a given width and height (in steps) while continuously collecting
+% data. It then parses it and displays the data in a heatmap visualization.
+%
+% Program output: rawData.mat -> a cell array with the raw data from the
+% photomultiplier tube organized by row.
 
 clear; clc;
 
 %% DAQ Setup
 dq = daq("ni"); % Initialize a DataAcquisition interface object for an NI device
 dq.Rate = 250e3;       % Set rate [Hz] - 2e6 with OLDHAM5 and 250e3 with OLDHAM3
-sampleTime = 1e-3;     % Duration of time over which to average readings for scanning [sec]
-sampleScans = sampleTime*dq.Rate; % Number of samples over which to collect running average
 dqID = "PCIE6374_BNC"; % (OLDHAM5 Computer)
 % dqID = "PCI6221_bnc";    % (OLDHAM3 Computer)
 ainPin = "ai0";
@@ -56,7 +57,7 @@ try
     PD2 = channelsEnums.GetValue(1); % Channel 2 is the y stage
     
     % Zero the actuators
-    disp("Zero actuators 1 & 2")
+    disp("Zeroing actuators 1 & 2")
     device.SetPositionToZero(PD1);
     device.SetPositionToZero(PD2);
     
@@ -76,9 +77,9 @@ try
 
     increment = 50;   % [steps] define distance moved between scans on same row and between rows
     endXPos = 11500;  % [steps] define the final X value of the rows
-    xerr = 2000;      % [steps] additional steps for reverse motion
-    % endYPos = 11000;% [steps] define the final Y value of the columns
-    endYPos = increment*200; % [steps] single row scan
+    xerr = 1000;      % [steps] additional steps for reverse motion
+    endYPos = 11000;% [steps] define the final Y value of the columns
+    % endYPos = increment*200; % [steps] single row scan
 
     % Define total number of rows/columns for convenience
     totalRows = endYPos / increment;
@@ -92,9 +93,11 @@ try
     scanTime = tic;
 
     % Define pause lengths
-    shortpause = 1/dq.Rate;
+    % shortpause = 1/dq.Rate;
+    shortpause = 0.0001;
     longpause = 0.05;
 
+    disp("Beginning scan...")
     % Move through entire row/col range (subtract increment since we start at 0)
     for row = 0:increment:(endYPos-increment)
         tRow = tic; % (Re)start row stopwatch
@@ -102,8 +105,8 @@ try
         % Define current row number for convenience
         currentRow = row/increment + 1;
      
-        start(dq, "continuous");
         % Begin scanning along row & store raw data for the current row
+        start(dq, "continuous");
         move1(endXPos);
         pause(shortpause); % Infinitesimal pause needed for DAQ to find its data (why?)
         rawRowData = read(dq, "all", OutputFormat="Matrix");
@@ -114,12 +117,7 @@ try
         pause(longpause);
 
         % Move the x stage back to the beginning before starting new row
-        % and clear any accumulated data out of the buffer.
-        % pause(longpause); % DAQ needs 30 ms to "rest" (why?)
         move1(-endXPos-xerr);
-        % pause(shortpause); % Infinitesimal pause needed for DAQ to find its data (why?)
-        % bufferClear = read(dq, "all", OutputFormat="Matrix"); % Clear data
-        % pause(longpause); % DAQ needs 30 ms to "rest" (why?)
 
         % Store collected raw data for the row in the raw cell array.
         rawData{currentRow} = rawRowData;
@@ -130,7 +128,7 @@ try
         % Take row time, calculate remaining time to completion and display
         rowTime = toc(tRow);
         estRemaining = toc(tRow) * (totalRows-currentRow);
-        fprintf("\nRow %d/%d scanned in %f seconds. ~%dm %ds remaining.\n", ...
+        fprintf("Row %d/%d scanned in %f seconds. ~%dm %ds remaining.\n", ...
             currentRow, totalRows, rowTime, int16(estRemaining/60), int16(mod(estRemaining, 60)));
     end
         
@@ -142,32 +140,21 @@ catch err
     device.Disconnect();
 end
 
-%% Downsample data (pixelate) and rotate to display in heatmap
-for row=1:length(rawData)
-    % Use block processing to divide raw row data up into pixels the size
-    % of the totalCols value and average all the values within the pixel.
-    rowData = blockproc(rawData{row}, [totalCols, 1], @(x) mean(x.data));
 
-    % Append downsampled row into full image
-    imageData{row} = rowData;
-end
-
-% Rotate and mirror the data for correct image orientation
-imageData = cell2mat(imageData);
-imageData = rot90(imageData);
-imageData = flip(imageData);
-
-% Create figure with date and time of scan and plot data as heatmap
-figure(Name=string(datetime));
-h = heatmap(imageData);
-h.GridVisible = "off";
-
-%% Disconnect from controller
+%% Disconnect and stop data collection
 disp("Program ended, disconnecting from controller...")
-fprintf("Scanned %d row(s) and %d column(s) in %f seconds.\n", totalRows, totalCols, toc(scanTime))
+time = toc(scanTime);
+fprintf("Scanned %d row(s) and %d column(s) in %d min %f sec.\n", totalRows, totalCols, int16(time/60), mod(time, 60))
 device.StopPolling();
 device.Disconnect();
 
 % Stop data collection and clean up
 stop(dq);
 flush(dq);
+
+%% Save scan file in current directory
+t = datetime;
+t.Format = 'yyyy-MM-dd''T''HHmm';
+filename = strcat("scan",string(t),".mat");
+save(filename, "rawData");
+fprintf("Saved scan data to %s", filename);

@@ -1,5 +1,5 @@
-% Title: Inertial Drive Stage (IDS) Scanning Autosequence
-% Filename: ids_scanning_movement.m
+% Title: Inertial Drive Stage (IDS) Scanning Movement Autosequence
+% Filename: ids_scan_movement.m
 % Author: Ioan Assenov
 %
 % Based on code from the original Thorlabs Git repository
