@@ -14,7 +14,7 @@ clear; clc;
 
 %% DAQ Setup
 dq = daq("ni"); % Initialize a DataAcquisition interface object for an NI device
-dq.Rate = 250e3;       % Set rate [Hz] - 2e6 with OLDHAM5 and 250e3 with OLDHAM3
+dq.Rate = 250e3;         % Set rate [Hz] - 2e6 with OLDHAM5 and 250e3 with OLDHAM3
 % dqID = "PCIE6374_BNC"; % (OLDHAM5 Computer)
 dqID = "PCI6221_bnc";    % (OLDHAM3 Computer)
 ainPin = "ai0";
@@ -64,7 +64,7 @@ try
     %% Define movement parameters
     % Define new drive parameters object and configure it
     driveParams = Thorlabs.MotionControl.KCube.InertialMotorCLI.DriveParams;
-    driveParams.StepRate = 2000;
+    driveParams.StepRate = 2500; % can go up to 2500 [steps/s]
     device.SetDriveParameters(PD1, driveParams); % Apply drive parameters to PD1
     device.SetDriveParameters(PD2, driveParams); % Apply drive parameters to PD2
 
@@ -75,10 +75,10 @@ try
     % ######################## Movements ########################
     % To scan a single row, set the endYPos equal to the increment
 
-    increment = 20;   % [steps] define distance moved between scans on same row and between rows
-    endXPos = 11000;  % [steps] define the final X value of the rows
-    xerr = 0;      % [steps] additional steps for reverse motion
-    endYPos = 11000;% [steps] define the final Y value of the columns
+    increment = 10;  % [steps] define distance moved between rows
+    endXPos = 11200; % [steps] define the final X value of the rows
+    xerr = 0;        % [steps] additional steps for reverse motion
+    endYPos = 11000; % [steps] define the final Y value of the columns
     % endYPos = increment*200; % [steps] single row scan
 
     % Define total number of rows for convenience
@@ -86,7 +86,6 @@ try
 
     % Initialize empty row data cell array
     rawData = cell(totalRows, 1);
-
 
     % Start data acquisition & stopwatch
     scanTime = tic;
@@ -96,13 +95,18 @@ try
     shortpause = 0.0001;
     longpause = 0.05;
 
+    
+    % Display begin status and initialize progress bar
     disp("Beginning scan...")
+    progBar = waitbar(0, "Beginning scan...", "Name", sprintf("Quick scan of %d rows", totalRows));
+
     % Move through entire row/col range (subtract increment since we start at 0)
     for row = 0:increment:(endYPos-increment)
         tRow = tic; % (Re)start row stopwatch
 
-        % Define current row number for convenience
+        % Define current row number for convenience and update progress bar
         currentRow = row/increment + 1;
+        waitbar(currentRow/totalRows, progBar, sprintf("Scanning row %d of %d...", currentRow, totalRows));
      
         % Begin scanning along row & store raw data for the current row
         start(dq, "continuous");
@@ -150,6 +154,7 @@ device.Disconnect();
 % Stop data collection and clean up
 stop(dq);
 flush(dq);
+close(progBar); % Close progress bar window
 
 %% Save scan file in current directory
 t = datetime;

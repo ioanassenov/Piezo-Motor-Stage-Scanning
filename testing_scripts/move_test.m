@@ -69,7 +69,7 @@ try
 
     % Define new drive parameters object and configure it
     driveParams = Thorlabs.MotionControl.KCube.InertialMotorCLI.DriveParams;
-    driveParams.StepRate = 2000;
+    driveParams.StepRate = 2000; % can go up to 2500 steps/s
     device.SetDriveParameters(PD1, driveParams); % Apply drive parameters to PD1
     device.SetDriveParameters(PD2, driveParams); % Apply drive parameters to PD2
 
@@ -81,7 +81,7 @@ try
     move2 = @(steps) device.MoveBy(PD2, int32(steps), timeout);
 
     %% Movements
-    move1(10000)
+    move1(-2000)
     
 
 catch error
