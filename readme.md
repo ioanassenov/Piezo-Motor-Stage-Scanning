@@ -6,8 +6,7 @@ Piezoelectric Inertial Drive Stages made by Thorlabs.
 ## Notable Files
 - `quick_scan.m` Scans a target in 2D and generates a raw data scan file.
 - `data_processing.m` Used to process the output of the above script into an image.
-- `daq_testing.m` Useful as a guide to understanding how the DAQ API works.
-- `completed_scans/` Directory contains images and .mat files of target scans.
+- `testing_scripts/` Contains test scripts that can be used as guides on the libraries.
 
 
 ## Movement
