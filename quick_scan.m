@@ -15,8 +15,8 @@ clear; clc;
 %% DAQ Setup
 dq = daq("ni"); % Initialize a DataAcquisition interface object for an NI device
 dq.Rate = 250e3;       % Set rate [Hz] - 2e6 with OLDHAM5 and 250e3 with OLDHAM3
-dqID = "PCIE6374_BNC"; % (OLDHAM5 Computer)
-% dqID = "PCI6221_bnc";    % (OLDHAM3 Computer)
+% dqID = "PCIE6374_BNC"; % (OLDHAM5 Computer)
+dqID = "PCI6221_bnc";    % (OLDHAM3 Computer)
 ainPin = "ai0";
 in1 = addinput(dq, dqID, ainPin, "Voltage"); % Create input channel that we read data from
 varName = dqID + "_" + ainPin; % Assemble variable name of input for conveninent table indexing
@@ -75,15 +75,14 @@ try
     % ######################## Movements ########################
     % To scan a single row, set the endYPos equal to the increment
 
-    increment = 50;   % [steps] define distance moved between scans on same row and between rows
-    endXPos = 11500;  % [steps] define the final X value of the rows
-    xerr = 1000;      % [steps] additional steps for reverse motion
+    increment = 20;   % [steps] define distance moved between scans on same row and between rows
+    endXPos = 11000;  % [steps] define the final X value of the rows
+    xerr = 0;      % [steps] additional steps for reverse motion
     endYPos = 11000;% [steps] define the final Y value of the columns
     % endYPos = increment*200; % [steps] single row scan
 
-    % Define total number of rows/columns for convenience
+    % Define total number of rows for convenience
     totalRows = endYPos / increment;
-    totalCols = endXPos / increment;
 
     % Initialize empty row data cell array
     rawData = cell(totalRows, 1);
@@ -129,7 +128,7 @@ try
         rowTime = toc(tRow);
         estRemaining = toc(tRow) * (totalRows-currentRow);
         fprintf("Row %d/%d scanned in %f seconds. ~%dm %ds remaining.\n", ...
-            currentRow, totalRows, rowTime, int16(estRemaining/60), int16(mod(estRemaining, 60)));
+            currentRow, totalRows, rowTime, floor(estRemaining/60), int16(mod(estRemaining, 60)));
     end
         
 catch err
