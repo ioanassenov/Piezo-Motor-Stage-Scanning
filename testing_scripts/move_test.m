@@ -1,5 +1,3 @@
-%% Header
-
 % Title: Sandbox file for movement testing purposes
 % Filename: move_test.m
 % Author: Ioan Assenov
@@ -83,7 +81,7 @@ try
     move2 = @(steps) device.MoveBy(PD2, int32(steps), timeout);
 
     %% Movements
-
+    move1(10000)
     
 
 catch error
@@ -93,6 +91,6 @@ catch error
 end
 
 %% Disconnect from controller
-% disp("Program completed, disconnecting device...")
-% device.StopPolling();
-% device.Disconnect();
+disp("Program completed, disconnecting device...")
+device.StopPolling();
+device.Disconnect();
