@@ -143,7 +143,7 @@ end
 %% Disconnect and stop data collection
 disp("Program ended, disconnecting from controller...")
 time = toc(scanTime);
-fprintf("Scanned %d row(s) and %d column(s) in %d min %f sec.\n", totalRows, totalCols, int16(time/60), mod(time, 60))
+fprintf("Scanned %d row(s) in %d min %f sec.\n", totalRows, int16(time/60), mod(time, 60))
 device.StopPolling();
 device.Disconnect();
 
