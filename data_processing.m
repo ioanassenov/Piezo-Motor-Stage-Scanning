@@ -10,8 +10,8 @@
 %% 1) Read file
 clear; clc;
 fprintf("1) Reading scan data...\n")
-filename = "scan2025-05-30T1543.mat";
-filepath = fullfile("completed_scans", filename);
+filename = "USAF-target-550row.mat";
+filepath = fullfile(filename);
 load(filepath);
 fprintf("|\tSuccessfully loaded scan data: %s\n", filepath);
 
@@ -73,6 +73,7 @@ fprintf("|\tRaw data cell array converted to matrix with %d rows and %d columns\
 
 
 %% 5A) Row-wise column average downsampling
+tic;
 % Downsample the image by averaging groups of columns
 fprintf("\n5A) Using row-wise averaging downsampling for image generation\n");
 % Specify number of (horizontal) pixels desired
@@ -87,6 +88,7 @@ imageData = blockproc(rawDataMat, [1, pixelSize], @(x) mean(x.data));
 imageData = rot90(imageData, 2);
 
 fprintf("|\tNew imageData processed with size %dx%d\n", size(imageData, 1), size(imageData, 2));
+toc;
 
 %% 5B) Row-wise column skip downsampling
 % Downsample the image by skipping columns
