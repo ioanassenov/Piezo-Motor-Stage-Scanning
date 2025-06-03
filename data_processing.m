@@ -10,7 +10,7 @@
 %% 1) Read file
 clear; clc;
 fprintf("1) Reading scan data...\n")
-filename = "USAF-target-550row.mat";
+filename = "scan2025-06-03T1259.mat";
 filepath = fullfile(filename);
 load(filepath);
 fprintf("|\tSuccessfully loaded scan data: %s\n", filepath);
@@ -43,21 +43,34 @@ if isempty(susRows)
 end
 
 
-%% 3A) Clean up data - Delete unhealthy rows (after integrity check)
+%% 3A) Clean up data - Delete unhealthy rows
 rawData(susRows) = [];
 fprintf("\n3A) Deleted %d unhealthy rows!\n", length(susRows));
 fprintf("|\tData now has %d rows.\n", length(rawData));
 susRows = [];
 
-%% 3B) Clean up data - Replace unhealthy rows with NaN (after integrity check)
+%% 3B) Clean up data - Replace unhealthy rows with NaN
 rawData(susRows) = {nan(modeLength, 1)};
 fprintf("\n3B) Filled %d unhealthy rows with NaN!\n", length(susRows));
 fprintf("|\tData now has %d rows.\n", length(rawData));
 susRows = [];
 
-%% 3C) Clean up data - Truncate rows with excess entries (after integrity check)
+%% 3C) Clean up data - Truncate rows with excess entries
 rawData(susRows) = cellfun(@(x) x(1:modeLength), rawData(susRows), "UniformOutput", false);
 fprintf("\n3C) Truncated %d unhealthy rows to %d columns!\n", length(susRows), modeLength);
+fprintf("|\tData now has %d rows.\n", length(rawData));
+susRows = [];
+
+%% 3D) Clean up data - Pad short rows with NaN
+susLength = length(rawData{susRows(1)});
+rawData(susRows) = cellfun(@(x) [x; nan(modeLength-susLength, 1)], rawData(susRows), 'UniformOutput', false);
+fprintf("\n3D) Padded %d short rows with NaN!\n", length(susRows));
+fprintf("|\tData now has %d rows.\n", length(rawData));
+
+%% 3E) Clean up data - Truncate all rows to desired value (left crop)
+truncLength = 1100000; % This value can be set as desired
+rawData = cellfun(@(x) x(1:truncLength), rawData, "UniformOutput", false);
+fprintf("\n3C) Force truncated all rows to %d columns!\n", truncLength);
 fprintf("|\tData now has %d rows.\n", length(rawData));
 susRows = [];
 
@@ -87,8 +100,7 @@ imageData = blockproc(rawDataMat, [1, pixelSize], @(x) mean(x.data));
 % Rotate the data for correct image orientation
 imageData = rot90(imageData, 2);
 
-fprintf("|\tNew imageData processed with size %dx%d\n", size(imageData, 1), size(imageData, 2));
-toc;
+fprintf("|\tNew imageData processed with size %dx%d in %f sec\n", size(imageData, 1), size(imageData, 2), toc);
 
 %% 5B) Row-wise column skip downsampling
 % Downsample the image by skipping columns
@@ -109,6 +121,7 @@ fprintf("|\tNew imageData processed with size %dx%d\n", size(imageData, 1), size
 fprintf("\n6) Generating heatmap\n");
 figure(Name=string(datetime));
 h = heatmap(imageData);
+fprintf("|\tGenerated heatmap %s\n", datetime);
 
 % Heatmap style options
 h.GridVisible = "off";
