@@ -9,15 +9,16 @@ clear;
 %% DAQ Setup
 dq = daq("ni");
 dq.Rate = 250e3;
-dqID = "PCIE6374_BNC";
+% dqID = "PCIE6374_BNC";
+dqID = "PCI6221_bnc";    % (OLDHAM3 Computer)
 ainPin = "ai0";
 in1 = addinput(dq, dqID, ainPin, "Voltage");
 varName = dqID + "_" + ainPin;
 
 %% Stage Movement Setup
-devCLI = NET.addAssembly(fullfile(pwd, "kinesis_dlls\Thorlabs.MotionControl.DeviceManagerCLI.dll"));
-genCLI = NET.addAssembly(fullfile(pwd, "kinesis_dlls\Thorlabs.MotionControl.GenericMotorCLI.dll"));
-motCLI = NET.addAssembly(fullfile(pwd, "kinesis_dlls\Thorlabs.MotionControl.KCube.InertialMotorCLI.dll"));
+devCLI = NET.addAssembly(fullfile(pwd, "..\kinesis_dlls\Thorlabs.MotionControl.DeviceManagerCLI.dll"));
+genCLI = NET.addAssembly(fullfile(pwd, "..\kinesis_dlls\Thorlabs.MotionControl.GenericMotorCLI.dll"));
+motCLI = NET.addAssembly(fullfile(pwd, "..\kinesis_dlls\Thorlabs.MotionControl.KCube.InertialMotorCLI.dll"));
 
 import Thorlabs.MotionControl.DeviceManagerCLI.*
 import Thorlabs.MotionControl.GenericMotorCLI.*

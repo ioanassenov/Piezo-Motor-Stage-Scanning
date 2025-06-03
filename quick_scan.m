@@ -64,7 +64,7 @@ try
     %% Define movement parameters
     % Define new drive parameters object and configure it
     driveParams = Thorlabs.MotionControl.KCube.InertialMotorCLI.DriveParams;
-    driveParams.StepRate = 2500; % can go up to 2500 [steps/s]
+    driveParams.StepRate = 2000; % can go up to 2500 [steps/s]
     device.SetDriveParameters(PD1, driveParams); % Apply drive parameters to PD1
     device.SetDriveParameters(PD2, driveParams); % Apply drive parameters to PD2
 
@@ -75,11 +75,11 @@ try
     % ######################## Movements ########################
     % To scan a single row, set the endYPos equal to the increment
 
-    increment = 10;  % [steps] define distance moved between rows
+    increment = 15;  % [steps] define distance moved between rows
     endXPos = 11200; % [steps] define the final X value of the rows
     xerr = 0;        % [steps] additional steps for reverse motion
-    endYPos = 11000; % [steps] define the final Y value of the columns
-    % endYPos = increment*200; % [steps] single row scan
+    % endYPos = 11000; % [steps] define the final Y value of the columns
+    endYPos = increment*2; % [steps] single row scan
 
     % Define total number of rows for convenience
     totalRows = endYPos / increment;
@@ -92,7 +92,8 @@ try
 
     % Define pause lengths
     % shortpause = 1/dq.Rate;
-    shortpause = 0.0001;
+    % shortpause = 0.0001;
+    shortpause = 0.05;
     longpause = 0.05;
 
     
@@ -161,4 +162,4 @@ t = datetime;
 t.Format = 'yyyy-MM-dd''T''HHmm';
 filename = strcat("scan",string(t),".mat");
 save(filename, "rawData");
-fprintf("Saved scan data to %s", filename);
+fprintf("Saved scan data to %s\n", filename);
