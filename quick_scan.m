@@ -64,7 +64,7 @@ try
     %% Define movement parameters
     % Define new drive parameters object and configure it
     driveParams = Thorlabs.MotionControl.KCube.InertialMotorCLI.DriveParams;
-    driveParams.StepRate = 2500; % can go up to 2500 [steps/s]
+    driveParams.StepRate = 2000; % can go up to 2500 [steps/s]
     device.SetDriveParameters(PD1, driveParams); % Apply drive parameters to PD1
     device.SetDriveParameters(PD2, driveParams); % Apply drive parameters to PD2
 
@@ -72,13 +72,13 @@ try
     move1 = @(steps) device.MoveBy(PD1, int32(steps), timeout);
     move2 = @(steps) device.MoveBy(PD2, int32(steps), timeout);
 
-    % ######################## Movements ########################
+    % ########################## START Movements ##########################
     % To scan a single row, set the endYPos equal to the increment
 
-    increment = 15;  % [steps] define distance moved between rows
+    increment = 20;  % [steps] define distance moved between rows
     endXPos = 11200; % [steps] define the final X value of the rows
-    xerr = 1250;      % [steps] additional steps for reverse motion
-    endYPos = 11000; % [steps] define the final Y value of the columns
+    xerr = 1250;     % [steps] additional steps for reverse motion
+    endYPos = 8000;  % [steps] define the final Y value of the columns (Usually 11000 for full scan)
     % endYPos = increment; % [steps] single row scan
 
     % Define total number of rows for convenience (note the first row is 0)
@@ -151,6 +151,7 @@ try
         row = row + increment;
         scanAttempts = 1;
     end
+    % ########################### END Movements ###########################
         
 catch err
     disp("Error has caused the program to stop, disconnecting...")
