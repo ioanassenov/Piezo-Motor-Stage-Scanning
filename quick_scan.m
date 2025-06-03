@@ -64,7 +64,7 @@ try
     %% Define movement parameters
     % Define new drive parameters object and configure it
     driveParams = Thorlabs.MotionControl.KCube.InertialMotorCLI.DriveParams;
-    driveParams.StepRate = 2000; % can go up to 2500 [steps/s]
+    driveParams.StepRate = 2500; % can go up to 2500 [steps/s]
     device.SetDriveParameters(PD1, driveParams); % Apply drive parameters to PD1
     device.SetDriveParameters(PD2, driveParams); % Apply drive parameters to PD2
 
@@ -77,12 +77,12 @@ try
 
     increment = 15;  % [steps] define distance moved between rows
     endXPos = 11200; % [steps] define the final X value of the rows
-    xerr = 0;        % [steps] additional steps for reverse motion
-    % endYPos = 11000; % [steps] define the final Y value of the columns
-    endYPos = increment*2; % [steps] single row scan
+    xerr = 1250;      % [steps] additional steps for reverse motion
+    endYPos = 11000; % [steps] define the final Y value of the columns
+    % endYPos = increment; % [steps] single row scan
 
-    % Define total number of rows for convenience
-    totalRows = endYPos / increment;
+    % Define total number of rows for convenience (note the first row is 0)
+    totalRows = floor(endYPos/increment) + 1;
 
     % Initialize empty row data cell array
     rawData = cell(totalRows, 1);
@@ -92,8 +92,7 @@ try
 
     % Define pause lengths
     % shortpause = 1/dq.Rate;
-    % shortpause = 0.0001;
-    shortpause = 0.05;
+    shortpause = 0.001;
     longpause = 0.05;
 
     
@@ -102,12 +101,15 @@ try
     progBar = waitbar(0, "Beginning scan...", "Name", sprintf("Quick scan of %d rows", totalRows));
 
     % Move through entire row/col range (subtract increment since we start at 0)
-    for row = 0:increment:(endYPos-increment)
+    row = 0;
+    scanAttempts = 1;
+    while row <= endYPos
         tRow = tic; % (Re)start row stopwatch
 
         % Define current row number for convenience and update progress bar
         currentRow = row/increment + 1;
-        waitbar(currentRow/totalRows, progBar, sprintf("Scanning row %d of %d...", currentRow, totalRows));
+        waitbar(currentRow/totalRows, progBar, sprintf("Scanning row %d of %d (attempt %d)...", ...
+            currentRow, totalRows, scanAttempts));
      
         % Begin scanning along row & store raw data for the current row
         start(dq, "continuous");
@@ -126,14 +128,28 @@ try
         % Store collected raw data for the row in the raw cell array.
         rawData{currentRow} = rawRowData;
 
+        % Check to see that data was in fact collected and row is not empty
+        % if it is, display a warning, decrease row increment, and retry.
+        if isempty(rawData{currentRow})
+            warning("No data collected for row %d, retrying...", currentRow);
+            currentRow = currentRow - 1;
+            scanAttempts = scanAttempts + 1;
+            continue; % Restart the loop before we increment in y
+        end
+
         % Move the y stage to the next row after completing the x movements
+        % provided data collection for the row was successful.
         move2(-increment);
         
         % Take row time, calculate remaining time to completion and display
         rowTime = toc(tRow);
         estRemaining = toc(tRow) * (totalRows-currentRow);
-        fprintf("Row %d/%d scanned in %f seconds. ~%dm %ds remaining.\n", ...
-            currentRow, totalRows, rowTime, floor(estRemaining/60), int16(mod(estRemaining, 60)));
+        fprintf("Row %d/%d scanned in %f sec after %d attempt(s). ~%dm %ds remaining.\n", ...
+            currentRow, totalRows, rowTime, scanAttempts, floor(estRemaining/60), int16(mod(estRemaining, 60)));
+
+        % Increment row location (steps) & reset attempts counter
+        row = row + increment;
+        scanAttempts = 1;
     end
         
 catch err
@@ -148,7 +164,7 @@ end
 %% Disconnect and stop data collection
 disp("Program ended, disconnecting from controller...")
 time = toc(scanTime);
-fprintf("Scanned %d row(s) in %d min %f sec.\n", totalRows, int16(time/60), mod(time, 60))
+fprintf("Scanned %d row(s) in %d min %f sec.\n", currentRow, int16(time/60), mod(time, 60))
 device.StopPolling();
 device.Disconnect();
 
