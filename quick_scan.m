@@ -72,38 +72,43 @@ try
     move1 = @(steps) device.MoveBy(PD1, int32(steps), timeout);
     move2 = @(steps) device.MoveBy(PD2, int32(steps), timeout);
 
-    % ########################## START Movements ##########################
+    % ========================== START Movements ==========================
     % To scan a single row, set the endYPos equal to the increment
 
-    increment = 20;  % [steps] define distance moved between rows
-    endXPos = 11200; % [steps] define the final X value of the rows
-    xerr = 1250;     % [steps] additional steps for reverse motion
-    endYPos = 8000;  % [steps] define the final Y value of the columns (Usually 11000 for full scan)
+    increment = 20;   % [steps] define distance moved between rows
+    endXPos = 10800;  % [steps] define the final X value of the rows
+    xerr = 1250;      % [steps] additional steps for reverse motion
+    startYPos = 3500; % [steps] desired y offset from origin to start scan from.
+    endYPos = 7000;   % [steps] define the final Y value of the columns from startYPos
     % endYPos = increment; % [steps] single row scan
 
+    % Make sure the y position bounds are valid
+    if endYPos - startYPos < 0
+        error("startYPos cannot exceed endYPos!");
+    end
+
     % Define total number of rows for convenience (note the first row is 0)
-    totalRows = floor(endYPos/increment) + 1;
+    totalRows = floor((endYPos-startYPos)/increment) + 1;
 
     % Initialize empty row data cell array
     rawData = cell(totalRows, 1);
 
-    % Start data acquisition & stopwatch
+    % Start stop watch and define pause durations
     scanTime = tic;
-
-    % Define pause lengths
     % shortpause = 1/dq.Rate;
     shortpause = 0.001;
     longpause = 0.05;
 
-    
-    % Display begin status and initialize progress bar
+    % Move to starting y location before scan loop begins and initialize progress bar.
+    fprintf("Moving to starting Y position: %d\n", startYPos);
+    move2(-startYPos);
     disp("Beginning scan...")
     progBar = waitbar(0, "Beginning scan...", "Name", sprintf("Quick scan of %d rows", totalRows));
 
     % Move through entire row/col range (subtract increment since we start at 0)
     row = 0;
     scanAttempts = 1;
-    while row <= endYPos
+    while row <= endYPos - startYPos
         tRow = tic; % (Re)start row stopwatch
 
         % Define current row number for convenience and update progress bar
@@ -151,7 +156,7 @@ try
         row = row + increment;
         scanAttempts = 1;
     end
-    % ########################### END Movements ###########################
+    % =========================== END Movements ===========================
         
 catch err
     disp("Error has caused the program to stop, disconnecting...")

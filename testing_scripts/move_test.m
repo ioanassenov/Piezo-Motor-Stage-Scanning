@@ -81,7 +81,8 @@ try
     move2 = @(steps) device.MoveBy(PD2, int32(steps), timeout);
 
     %% Movements
-    move1(-2000)
+    endXPos = 11200;
+    move1(endXPos);
     
 
 catch error
@@ -91,6 +92,6 @@ catch error
 end
 
 %% Disconnect from controller
-disp("Program completed, disconnecting device...")
-device.StopPolling();
-device.Disconnect();
+% disp("Program completed, disconnecting device...")
+% device.StopPolling();
+% device.Disconnect();
