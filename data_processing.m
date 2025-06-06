@@ -10,7 +10,7 @@
 %% 1) Read file
 clear; clc;
 fprintf("1) Reading scan data...\n")
-filename = "scan2025-06-05T1656.mat";
+filename = "scan2025-06-06T1606.mat";
 filepath = fullfile(filename);
 load(filepath);
 fprintf("|\tSuccessfully loaded scan data: %s\n", filepath);
@@ -119,7 +119,7 @@ fprintf("|\tNew imageData processed with size %dx%d\n", size(imageData, 1), size
 
 %% 6) Create heatmap image
 fprintf("\n6) Generating heatmap\n");
-figure(Name=string(datetime));
+figure(Name=filename);
 h = heatmap(imageData);
 fprintf("|\tGenerated heatmap %s\n", datetime);
 

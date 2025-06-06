@@ -75,12 +75,15 @@ try
     % ========================== START Movements ==========================
     % To scan a single row, set the endYPos equal to the increment
 
-    increment = 20;   % [steps] define distance moved between rows
-    endXPos = 10800;  % [steps] define the final X value of the rows
-    xerr = 1250;      % [steps] additional steps for reverse motion
-    startYPos = 3500; % [steps] desired y offset from origin to start scan from.
-    endYPos = 7000;   % [steps] define the final Y value of the columns from startYPos
-    % endYPos = increment; % [steps] single row scan
+    increment = 20;    % [steps] define distance moved between rows
+    endXPos   = 10800; % [steps] define the final X value of the rows
+    xerr      = 1250;  % [steps] additional steps for reverse motion
+    startYPos = 4500;  % [steps] desired y offset from origin to start scan from.
+    endYPos   = 8200;  % [steps] define the final Y value of the columns from startYPos
+    
+    % Single row scan settings:
+    % startYPos = 0;
+    % endYPos = increment;
 
     % Make sure the y position bounds are valid
     if endYPos - startYPos < 0
