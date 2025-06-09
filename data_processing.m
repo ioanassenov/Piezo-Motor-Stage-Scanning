@@ -10,7 +10,7 @@
 %% 1) Read file
 clear; clc;
 fprintf("1) Reading scan data...\n")
-filename = "scan2025-06-06T1606.mat";
+filename = "scan2025-06-09T1308.mat";
 filepath = fullfile(filename);
 load(filepath);
 fprintf("|\tSuccessfully loaded scan data: %s\n", filepath);
