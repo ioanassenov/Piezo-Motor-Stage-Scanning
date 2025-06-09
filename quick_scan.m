@@ -15,8 +15,8 @@ clear; clc;
 %% DAQ Setup
 dq = daq("ni"); % Initialize a DataAcquisition interface object for an NI device
 dq.Rate = 250e3;         % Set rate [Hz] - 2e6 with OLDHAM5 and 250e3 with OLDHAM3
-% dqID = "PCIE6374_BNC"; % (OLDHAM5 Computer)
-dqID = "PCI6221_bnc";    % (OLDHAM3 Computer)
+dqID = "PCIE6374_BNC"; % (OLDHAM5 Computer)
+% dqID = "PCI6221_bnc";    % (OLDHAM3 Computer)
 ainPin = "ai0";
 in1 = addinput(dq, dqID, ainPin, "Voltage"); % Create input channel that we read data from
 varName = dqID + "_" + ainPin; % Assemble variable name of input for conveninent table indexing
@@ -75,7 +75,7 @@ try
     % ========================== START Movements ==========================
     % To scan a single row, set the endYPos equal to the increment
 
-    increment = 15;    % [steps] define distance moved between rows
+    increment = 20;    % [steps] define distance moved between rows
     endXPos   = 10800; % [steps] define the final X value of the rows
     xerr      = 1250;  % [steps] additional steps for reverse motion
     startYPos = 3700;  % [steps] desired y offset from origin to start scan from.
