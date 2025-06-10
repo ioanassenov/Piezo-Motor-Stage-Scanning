@@ -15,11 +15,11 @@ clear; clc;
 %% DAQ Setup
 dq = daq("ni"); % Initialize a DataAcquisition interface object for an NI device
 dq.Rate = 250e3;         % Set rate [Hz] - 2e6 with OLDHAM5 and 250e3 with OLDHAM3
-dqID = "PCIE6374_BNC"; % (OLDHAM5 Computer)
-% dqID = "PCI6221_bnc";    % (OLDHAM3 Computer)
-ainPin = "ai0";
-in1 = addinput(dq, dqID, ainPin, "Voltage"); % Create input channel that we read data from
-varName = dqID + "_" + ainPin; % Assemble variable name of input for conveninent table indexing
+% dqID = "PCIE6374_BNC"; % (OLDHAM5 Computer)
+dqID = "PCI6221_bnc";    % (OLDHAM3 Computer)
+aInPin = "ai0";
+in1 = addinput(dq, dqID, aInPin, "Voltage"); % Create input channel that we read data from
+varName = dqID + "_" + aInPin; % Assemble variable name of input for conveninent table indexing
 
 %% Stage Movement Setup
 devCLI = NET.addAssembly(fullfile(pwd, "kinesis_dlls\Thorlabs.MotionControl.DeviceManagerCLI.dll"));
@@ -64,7 +64,7 @@ try
     %% Define movement parameters
     % Define new drive parameters object and configure it
     driveParams = Thorlabs.MotionControl.KCube.InertialMotorCLI.DriveParams;
-    driveParams.StepRate = 2000; % can go up to 2500 [steps/s]
+    driveParams.StepRate = 1500; % can go up to 2500 [steps/s]
     device.SetDriveParameters(PD1, driveParams); % Apply drive parameters to PD1
     device.SetDriveParameters(PD2, driveParams); % Apply drive parameters to PD2
 
@@ -76,11 +76,10 @@ try
     % To scan a single row, set the endYPos equal to the increment
 
     increment = 20;    % [steps] define distance moved between rows
-    endXPos   = 10800; % [steps] define the final X value of the rows
-    xerr      = 1250;  % [steps] additional steps for reverse motion
-    startYPos = 3700;  % [steps] desired y offset from origin to start scan from.
-    endYPos   = 7000;  % [steps] define the final Y value of the columns from startYPos
-    
+    endXPos   = 10500; % [steps] define the final X value of the rows
+    xerr      = 10100;  % [steps] additional steps for reverse motion
+    startYPos = 3900;  % [steps] desired y offset from origin to start scan from.
+    endYPos   = 8300;  % [steps] define the final Y value of the columns from startYPos   
     % Single row scan settings:
     % startYPos = 0;
     % endYPos = increment;
