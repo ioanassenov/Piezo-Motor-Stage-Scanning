@@ -8,11 +8,11 @@ global s_Vdc s_Vacx s_Vacy s_fx s_fy phiy t sys ax;
 % ---------------- Geometry & gain & constant definitions -----------------
 
 % Define control constants
-Vdc = 10; % DC voltage
-Vacx = 300; % AC voltage component in x direction
-Vacy = 5; % AC voltage component in y direction
-fx = 600;  % frequency in x direction (Hz)
-fy = 4;  % frequency in y direction (Hz)
+Vdc = 10;    % DC voltage
+Vacx = 300;  % AC voltage component in x direction
+Vacy = 5;    % AC voltage component in y direction
+fx = 600;    % frequency in x direction (Hz)
+fy = 4;      % frequency in y direction (Hz)
 phiy = pi/4; % phase shift in y direction
 tEnd = 1.5;  % Final time to model until [s]
 t = 0:0.001:tEnd; % time vector from 0 to 1 second with 1 ms interval
@@ -94,7 +94,7 @@ plot(ax, yDrive(:,1), yDrive(:,2));
 function reSimulate(src, event)
     global s_Vdc s_Vacx s_Vacy s_fx s_fy phiy t sys ax;
     
-    % Update gains from slider values
+    % Define shorthand local vars for new slider values
     Vdc = s_Vdc.Value;
     Vacx = s_Vacx.Value;
     Vacy = s_Vacy.Value;
@@ -110,7 +110,7 @@ function reSimulate(src, event)
 end
 
 
-%% Close all uifigures
+%% Close all uifigures and clear command window
 all_fig = findall(0, 'type', 'figure');
 close(all_fig)
 clc;
