@@ -14,7 +14,7 @@ Vacy = 5;    % AC voltage component in y direction
 fx = 600;    % frequency in x direction (Hz)
 fy = 4;      % frequency in y direction (Hz)
 phiy = pi/4; % phase shift in y direction
-tEnd = 1.5;  % Final time to model until [s]
+tEnd = 50;  % Final time to model until [s]
 t = 0:0.001:tEnd; % time vector from 0 to 1 second with 1 ms interval
 
 % Mirror geometry
@@ -73,24 +73,25 @@ grid1 = uigridlayout(fig1, [1, 2]);
 grid1.ColumnWidth = {'1x', '2x'};
 
 % Slider definitions
-p = uipanel(grid1, 'Title', 'Input Gain & Frequency');
-grid2 = uigridlayout(p, [5 1]);
-s_Vdc  = uislider(grid2, 'Limits', [0, 1000], 'Value', Vdc, 'Tooltip', 'Vdc', 'ValueChangedFcn', @reSimulate);
-s_Vacx = uislider(grid2, 'Limits', [0, 1000], 'Value', Vacx, 'Tooltip', 'Vacx', 'ValueChangedFcn', @reSimulate);
-s_Vacy = uislider(grid2, 'Limits', [0, 1000], 'Value', Vacy, 'Tooltip', 'Vacy', 'ValueChangedFcn', @reSimulate);
-s_fx   = uislider(grid2, 'Limits', [0, 1000], 'Value', fx, 'Tooltip', 'fx', 'ValueChangedFcn', @reSimulate);
-s_fy   = uislider(grid2, 'Limits', [0, 1000], 'Value', fy, 'Tooltip', 'fy', 'ValueChangedFcn', @reSimulate);
+p1 = uipanel(grid1, 'Title', 'Input Gain & Frequency');
+grid2 = uigridlayout(p1, [5 1]);
+s_Vdc  = uieditfield(grid2, 'numeric', 'Value', Vdc, 'ValueDisplayFormat', '%.1f | Vdc', 'ValueChangedFcn', @reSimulate);
+s_Vacx = uieditfield(grid2, 'numeric', 'Value', Vacx, 'ValueDisplayFormat', '%.1f | Vacx', 'ValueChangedFcn', @reSimulate);
+s_Vacy = uieditfield(grid2, 'numeric', 'Value', Vacy, 'ValueDisplayFormat', '%.1f | Vacy', 'ValueChangedFcn', @reSimulate);
+s_fx   = uieditfield(grid2, 'numeric', 'Value', fx, 'ValueDisplayFormat', '%.1f | fx', 'ValueChangedFcn', @reSimulate);
+s_fy   = uieditfield(grid2, 'numeric', 'Value', fy, 'ValueDisplayFormat', '%.1f | fy', 'ValueChangedFcn', @reSimulate);
 
 ax = uiaxes(grid1);
-xlim(ax, [-20e-7, 20e-7]); ylim(ax, [-20e-8, 20e-8]); 
-title(ax, 'MEMS Position Data');
-xlabel(ax, 'X Position');
-ylabel(ax, 'Y Position');
+xlim(ax, [-20e-7, 20e-7]); ylim(ax, [-20e-7, 20e-7]); 
+title(ax, 'MEMS Angular Position Data');
+xlabel(ax, 'X Position [rad]');
+ylabel(ax, 'Y Position [rad]');
 
 plot(ax, yDrive(:,1), yDrive(:,2));
 
 
-% Update value function definition
+% Resimulate function definition: update simulation with new variables
+% after entered in the ui edit fields and plot it.
 function reSimulate(src, event)
     global s_Vdc s_Vacx s_Vacy s_fx s_fy phiy t sys ax;
     

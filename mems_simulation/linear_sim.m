@@ -6,10 +6,10 @@ clear; close all;
 Vdc = 10; % DC voltage
 Vacx = 300; % AC voltage component in x direction
 Vacy = 5; % AC voltage component in y direction
-fx = 600;  % frequency in x direction (Hz)
-fy = 4;  % frequency in y direction (Hz)
+fx = 1;  % frequency in x direction (Hz)
+fy = 300;  % frequency in y direction (Hz)
 phiy = pi/4; % phase shift in y direction
-tEnd = 1.5;  % Final time to model until [s]
+tEnd = 100;  % Final time to model until [s]
 t = 0:0.001:tEnd; % time vector from 0 to 1 second with 1 ms interval
 
 % Mirror geometry
