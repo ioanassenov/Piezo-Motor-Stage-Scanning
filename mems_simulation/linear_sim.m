@@ -4,12 +4,13 @@ clear; close all;
 
 % Define control constants
 Vdc = 10; % DC voltage
-Vacx = 5; % AC voltage component in x direction
+Vacx = 300; % AC voltage component in x direction
 Vacy = 5; % AC voltage component in y direction
-fx = 60;  % frequency in x direction (Hz)
-fy = 60;  % frequency in y direction (Hz)
+fx = 600;  % frequency in x direction (Hz)
+fy = 4;  % frequency in y direction (Hz)
 phiy = pi/4; % phase shift in y direction
-t = 0:0.001:2; % time vector from 0 to 1 second with 1 ms interval
+tEnd = 1.5;  % Final time to model until [s]
+t = 0:0.001:tEnd; % time vector from 0 to 1 second with 1 ms interval
 
 % Mirror geometry
 a = 600e-6/2; % Length of semi-major axis [m]
@@ -65,15 +66,15 @@ sys = ss(A, B, C, D);
 % ----------------------- Plot for different inputs -----------------------
 
 % Plot step response
-figure;
-subplot(2, 1, 1);
-plot(tOut, yOut);
-title('Step Response');
-xlabel('Time [s]'); ylabel('Output Response [rad]');
-subplot(2, 1, 2);
-plot([0, t(end)], [1, 1]);
-title('Input voltage');
-xlabel('Time [s]'); ylabel('Driving Voltage [V]');
+% figure;
+% subplot(2, 1, 1);
+% plot(tOut, yOut);
+% title('Step Response');
+% xlabel('Time [s]'); ylabel('Output Response [rad]');
+% subplot(2, 1, 2);
+% plot([0, t(end)], [1, 1]);
+% title('Input voltage');
+% xlabel('Time [s]'); ylabel('Driving Voltage [V]');
 
 % Plot driving voltage response
 figure;
@@ -81,7 +82,13 @@ subplot(2, 1, 1);
 plot(tDrive, yDrive);
 title('Drive Voltage');
 xlabel('Time [s]'); ylabel('Output Response [rad]');
+legend('\theta_x', '\theta_y');
 subplot(2, 1, 2);
 plot(t, Vdrive);
 title('Input voltage');
 xlabel('Time [s]'); ylabel('Driving Voltage [V]');
+
+% Plot mems mirror movement in 2D
+figure;
+xlabel('\theta_x'); ylabel('\theta_y');
+comet(yDrive(:, 1), yDrive(:, 2));
