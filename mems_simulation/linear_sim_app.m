@@ -1,5 +1,9 @@
 clear; close all;
-global sys t ax;
+
+% Define input and system variables as global for interactive changes. This
+% is requried for MATLAB to be able to update the simulation plot with
+% changes in the slider values.
+global s_Vdc s_Vacx s_Vacy s_fx s_fy phiy t sys ax;
 
 % ---------------- Geometry & gain & constant definitions -----------------
 
@@ -64,29 +68,18 @@ sys = ss(A, B, C, D);
 % ----------------- Build and display interactive applet ------------------
 
 % Figure initialization
-fig1 = uifigure("Name", "MEMS Position Visualizer");
+fig1 = uifigure("Name", "MEMS Movement Visualizer");
 grid1 = uigridlayout(fig1, [1, 2]);
 grid1.ColumnWidth = {'1x', '2x'};
 
 % Slider definitions
 p = uipanel(grid1, 'Title', 'Input Gain & Frequency');
 grid2 = uigridlayout(p, [5 1]);
-s_Vdc  = uislider(grid2, 'Limits', [0, 1000], 'Value', Vdc, 'Tooltip', 'Vdc');
-s_Vacx = uislider(grid2, 'Limits', [0, 1000], 'Value', Vacx, 'Tooltip', 'Vacx');
-s_Vacy = uislider(grid2, 'Limits', [0, 1000], 'Value', Vacy, 'Tooltip', 'Vacy');
-s_fx   = uislider(grid2, 'Limits', [0, 1000], 'Value', fx, 'Tooltip', 'fx');
-s_fy   = uislider(grid2, 'Limits', [0, 1000], 'Value', fy, 'Tooltip', 'fy');
-
-s_Vdc.ValueChangedFcn = @(src, event, Vdc, Vacx, Vacy, fx, fy) updateDrawing(src, ...
-    event, s_Vdc.Value, s_Vacx.Value, s_Vacy.Value, s_fx.Value, s_fy.Value);
-s_Vacx.ValueChangedFcn = @(src, event, Vdc, Vacx, Vacy, fx, fy) updateDrawing(src, ...
-    event, s_Vdc.Value, s_Vacx.Value, s_Vacy.Value, s_fx.Value, s_fy.Value);
-s_Vacy.ValueChangedFcn = @(src, event, Vdc, Vacx, Vacy, fx, fy) updateDrawing(src, ...
-    event, s_Vdc.Value, s_Vacx.Value, s_Vacy.Value, s_fx.Value, s_fy.Value);
-s_fx.ValueChangedFcn = @(src, event, Vdc, Vacx, Vacy, fx, fy) updateDrawing(src, ...
-    event, s_Vdc.Value, s_Vacx.Value, s_Vacy.Value, s_fx.Value, s_fy.Value);
-s_fy.ValueChangedFcn = @(src, event, Vdc, Vacx, Vacy, fx, fy) updateDrawing(src, ...
-    event, s_Vdc.Value, s_Vacx.Value, s_Vacy.Value, s_fx.Value, s_fy.Value);
+s_Vdc  = uislider(grid2, 'Limits', [0, 1000], 'Value', Vdc, 'Tooltip', 'Vdc', 'ValueChangedFcn', @reSimulate);
+s_Vacx = uislider(grid2, 'Limits', [0, 1000], 'Value', Vacx, 'Tooltip', 'Vacx', 'ValueChangedFcn', @reSimulate);
+s_Vacy = uislider(grid2, 'Limits', [0, 1000], 'Value', Vacy, 'Tooltip', 'Vacy', 'ValueChangedFcn', @reSimulate);
+s_fx   = uislider(grid2, 'Limits', [0, 1000], 'Value', fx, 'Tooltip', 'fx', 'ValueChangedFcn', @reSimulate);
+s_fy   = uislider(grid2, 'Limits', [0, 1000], 'Value', fy, 'Tooltip', 'fy', 'ValueChangedFcn', @reSimulate);
 
 ax = uiaxes(grid1);
 xlim(ax, [-20e-7, 20e-7]); ylim(ax, [-20e-8, 20e-8]); 
@@ -98,14 +91,21 @@ plot(ax, yDrive(:,1), yDrive(:,2));
 
 
 % Update value function definition
-function updateDrawing(src, event, inVdc, inVacx, inVacy, infx, infy)
-    global sys t ax;
+function reSimulate(src, event)
+    global s_Vdc s_Vacx s_Vacy s_fx s_fy phiy t sys ax;
+    
     % Update gains from slider values
-    % Update the drawing based on the slider value
-    phiy = pi/4;
-    Vdrive = inVdc + inVacx .* sin(2*pi*infx*t) + inVacy .* sin(2*pi*infy*t + phiy);
+    Vdc = s_Vdc.Value;
+    Vacx = s_Vacx.Value;
+    Vacy = s_Vacy.Value;
+    fx = s_fx.Value;
+    fy = s_fy.Value;
 
-    [yDrive, tDrive] = lsim(sys, Vdrive, t);
+    % Calculate input function based on new values
+    Vdrive = Vdc + Vacx .* sin(2*pi*fx*t) + Vacy .* sin(2*pi*fy*t + phiy);
+
+    % Simulate system and then plot based on new input
+    yDrive = lsim(sys, Vdrive, t);
     plot(ax, yDrive(:,1), yDrive(:,2));
 end
 
