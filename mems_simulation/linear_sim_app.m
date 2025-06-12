@@ -1,3 +1,12 @@
+% Title: Interactive MEMS Simulation Applet
+% Filename: linear_sim_app.m
+% Author: Ioan Assenov
+%
+% Description: This script is a mini applet which provides an interactive
+% linear time invariant model of the MEMS mirror dynamics. It allows the
+% user to see how changes in input gains and frequencies approximately
+% influence the scanning profile of the MEMS mirror.
+
 clear; close all;
 
 % Define input and system variables as global for interactive changes. This
@@ -5,14 +14,15 @@ clear; close all;
 % changes in the slider values.
 global s_Vdc s_Vacx s_Vacy s_fx s_fy phiy t sys ax;
 
+
 % ---------------- Geometry & gain & constant definitions -----------------
 
-% Define control constants
-Vdc = 10;    % DC voltage
-Vacx = 300;  % AC voltage component in x direction
-Vacy = 5;    % AC voltage component in y direction
+% Define control constants (these are the initial values)
+Vdc = 8;    % DC voltage
+Vacx = 1;  % AC voltage component in x direction
+Vacy = 150;    % AC voltage component in y direction
 fx = 600;    % frequency in x direction (Hz)
-fy = 4;      % frequency in y direction (Hz)
+fy = 15;      % frequency in y direction (Hz)
 phiy = pi/4; % phase shift in y direction
 tEnd = 50;  % Final time to model until [s]
 t = 0:0.001:tEnd; % time vector from 0 to 1 second with 1 ms interval

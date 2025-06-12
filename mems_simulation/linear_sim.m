@@ -1,3 +1,11 @@
+% Title: Static MEMS Simulation Using State Space
+% Filename: linear_sim.m
+% Author: Ioan Assenov
+%
+% Description: This script is the precursor to linear_sim_app.m. It was
+% used to establish a quick and accurate solution to the linear model of
+% the MEMS mirror before being turned into an interactive app.
+
 clear; close all;
 
 % ---------------- Geometry & gain & constant definitions -----------------
