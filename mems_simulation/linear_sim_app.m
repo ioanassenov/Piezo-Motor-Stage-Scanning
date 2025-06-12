@@ -1,4 +1,5 @@
 clear; close all;
+global sys t ax;
 
 % ---------------- Geometry & gain & constant definitions -----------------
 
@@ -70,25 +71,40 @@ grid1.ColumnWidth = {'1x', '2x'};
 % Slider definitions
 p = uipanel(grid1, 'Title', 'Input Gain & Frequency');
 grid2 = uigridlayout(p, [5 1]);
-s_Vdc = uislider(grid2, 'Tag','test');
+s_Vdc  = uislider(grid2, 'Limits', [0, 1000], 'Value', Vdc, 'Tooltip', 'Vdc');
+s_Vacx = uislider(grid2, 'Limits', [0, 1000], 'Value', Vacx, 'Tooltip', 'Vacx');
+s_Vacy = uislider(grid2, 'Limits', [0, 1000], 'Value', Vacy, 'Tooltip', 'Vacy');
+s_fx   = uislider(grid2, 'Limits', [0, 1000], 'Value', fx, 'Tooltip', 'fx');
+s_fy   = uislider(grid2, 'Limits', [0, 1000], 'Value', fy, 'Tooltip', 'fy');
+
+s_Vdc.ValueChangedFcn = @(src, event, Vdc, Vacx, Vacy, fx, fy) updateDrawing(src, ...
+    event, s_Vdc.Value, s_Vacx.Value, s_Vacy.Value, s_fx.Value, s_fy.Value);
+s_Vacx.ValueChangedFcn = @(src, event, Vdc, Vacx, Vacy, fx, fy) updateDrawing(src, ...
+    event, s_Vdc.Value, s_Vacx.Value, s_Vacy.Value, s_fx.Value, s_fy.Value);
+s_Vacy.ValueChangedFcn = @(src, event, Vdc, Vacx, Vacy, fx, fy) updateDrawing(src, ...
+    event, s_Vdc.Value, s_Vacx.Value, s_Vacy.Value, s_fx.Value, s_fy.Value);
+s_fx.ValueChangedFcn = @(src, event, Vdc, Vacx, Vacy, fx, fy) updateDrawing(src, ...
+    event, s_Vdc.Value, s_Vacx.Value, s_Vacy.Value, s_fx.Value, s_fy.Value);
+s_fy.ValueChangedFcn = @(src, event, Vdc, Vacx, Vacy, fx, fy) updateDrawing(src, ...
+    event, s_Vdc.Value, s_Vacx.Value, s_Vacy.Value, s_fx.Value, s_fy.Value);
 
 ax = uiaxes(grid1);
+xlim(ax, [-20e-7, 20e-7]); ylim(ax, [-20e-8, 20e-8]); 
 title(ax, 'MEMS Position Data');
 xlabel(ax, 'X Position');
 ylabel(ax, 'Y Position');
 
 plot(ax, yDrive(:,1), yDrive(:,2));
 
-function updateDrawing(src, event, xr)
+
+% Update value function definition
+function updateDrawing(src, event, inVdc, inVacx, inVacy, infx, infy)
+    global sys t ax;
     % Update gains from slider values
     % Update the drawing based on the slider value
-    Vdc = s_Vdc; % DC voltage
-    Vacx = s_Vacx; % AC voltage component in x direction
-    Vacy = s_Vacx; % AC voltage component in y direction
-    fx = s_fx;  % frequency in x direction (Hz)
-    fy = s_fy;  % frequency in y direction (Hz)
+    phiy = pi/4;
+    Vdrive = inVdc + inVacx .* sin(2*pi*infx*t) + inVacy .* sin(2*pi*infy*t + phiy);
 
-    Vdrive = Vdc + gainValue * (Vacx .* sin(2*pi*fx*t) + Vacy .* sin(2*pi*fy*t + phiy));
     [yDrive, tDrive] = lsim(sys, Vdrive, t);
     plot(ax, yDrive(:,1), yDrive(:,2));
 end
@@ -97,3 +113,4 @@ end
 %% Close all uifigures
 all_fig = findall(0, 'type', 'figure');
 close(all_fig)
+clc;
