@@ -14,7 +14,17 @@ With $V_{DC}$, $V_{AC,q}$, $f_q$, and $\phi_y$ being
 arbitrary constants. $\theta_x(t)$ and $\theta_y(t)$ represent the angular
 position of the mirror over time.
 
-## MEMS Mirror
+Alternatively, $V_{drive}$ may be defined as a vector with separate $x$ and
+$y$ components in order to better emulate the non-linear behavior of the
+actual system:
+
+$V_{drive,x} = V_{DC} + V_{AC, x}\sin(2 \pi f_xt)$
+
+$V_{drive,y} = V_{AC,y}\sin(2 \pi f_y t + \phi_y)$
+
+This definition of $V_{drive}$ is used in `linear2_sim_app.m`
+
+# MEMS Mirror
 The mirror is an ellipse with a major axis of 600 micrometers and a minor
 axis of 400 micrometers. The stiffnesses and damping coefficients are
 defined based on the natural frequencies:
