@@ -17,7 +17,7 @@ Vacy = 5; % AC voltage component in y direction
 fx = 1;  % frequency in x direction (Hz)
 fy = 300;  % frequency in y direction (Hz)
 phiy = pi/4; % phase shift in y direction
-tEnd = 100;  % Final time to model until [s]
+tEnd = 1.5;  % Final time to model until [s]
 t = 0:0.001:tEnd; % time vector from 0 to 1 second with 1 ms interval
 
 % Mirror geometry
@@ -34,12 +34,13 @@ Jx = (1/4) * m * a^2 + (1/12) * m * b^2; % Minor axis
 Jy = (1/4) * m * b^2 + (1/12) * m * a^2; % Major axis
 % Stiffness and damping properties
 zeta = 0.05; % damping ratio estimate
-kx = (600*2*pi)^2*Jx;  % spring constant in x direction
-ky = (1400*2*pi)^2*Jy; % spring constant in y direction
-cx = 2*zeta*sqrt(kx*m);% damping coefficient in x direction
-cy = 2*zeta*sqrt(ky*m);% damping coefficient in y direction
-gx = 1;                % Drive voltage (input) gain
-
+kx = (600*2*pi)^2*Jx;   % spring constant in x direction
+ky = (1400*2*pi)^2*Jy;  % spring constant in y direction
+cx = 2*zeta*sqrt(kx*Jx);% damping coefficient in x direction
+cy = 2*zeta*sqrt(ky*Jy);% damping coefficient in y direction
+% Drive voltage (input) gains
+gx = 1;
+gy = gx;
 
 % ----------------------- Input voltage definition ------------------------
 
@@ -54,7 +55,7 @@ A = [0, 0, 1, 0;
      0, 0, 0, 1;
      -kx/Jx, 0, -cx/Jx, 0;
      0, -ky/Jy, 0, -cy/Jy];
-B = [0; 0; gx; gx];
+B = [0; 0; gx/Jx; gy/Jy];
 C = [1, 0, 0, 0;
      0, 1, 0, 0];
 D = 0;
