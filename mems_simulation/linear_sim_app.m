@@ -52,8 +52,9 @@ gy = gx;
 % ----------------------- Input voltage definition ------------------------
 
 % Drive voltage definition
-Vdrive = Vdc + Vacx .* sin(2*pi*fx*t) + Vacy .* sin(2*pi*fy*t + phiy);
-
+V1 = Vdc + Vacx .* sin(2*pi*fx*t);
+V2 = Vacy .* sin(2*pi*fy*t + phiy);
+Vdrive = [V1; V2];
 
 % ------------------------ State space definition -------------------------
 
@@ -62,7 +63,10 @@ A = [0, 0, 1, 0;
      0, 0, 0, 1;
      -kx/Jx, 0, -cx/Jx, 0;
      0, -ky/Jy, 0, -cy/Jy];
-B = [0; 0; gx/Jx; gy/Jy];
+B = [0, 0;
+     0, 0;
+     gx/Jx, gx/Jx;
+     0, gy/Jy];
 C = [1, 0, 0, 0;
      0, 1, 0, 0];
 D = 0;
@@ -116,7 +120,9 @@ function reSimulate(src, event)
     phiy = s_phiy.Value;
 
     % Calculate input function based on new values
-    Vdrive = Vdc + Vacx .* sin(2*pi*fx*t) + Vacy .* sin(2*pi*fy*t + phiy);
+    V1 = Vdc + Vacx .* sin(2*pi*fx*t);
+    V2 = Vacy .* sin(2*pi*fy*t + phiy);
+    Vdrive = [V1; V2];
 
     % Simulate system and then plot with the new input
     yDrive = lsim(sys, Vdrive, t);
