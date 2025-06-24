@@ -14,12 +14,20 @@ varName = dqID + "_" + aInPin; % Assemble variable name of input for conveninent
 % DAQ output (system input) definition
 t = linspace(0, 1, dq.Rate);
 
-Vdc = 6;
-Vacx = 3;
-Vacy = 1;
-fx = 100;
-fy = 1000;
+% Vdc = 4;
+% Vacx = 4;
+% Vacy = 2;
+% fx = 5;
+% fy = 2;
+% phiy = 0.8;
+
+Vdc = 3;
+Vacx = 4;
+Vacy = 3;
+fx = 64;
+fy = 105;
 phiy = 0.8;
+
 
 Vdrive = Vdc + Vacx*sin(2*pi*fx*t) + Vacy*sin(2*pi*fy*t + phiy);
 
