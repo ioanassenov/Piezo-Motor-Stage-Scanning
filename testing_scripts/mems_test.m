@@ -11,14 +11,20 @@ in1 = addinput(dq, dqID, aInPin, "Voltage"); % Create input channel that we read
 out1 = addoutput(dq, dqID, aOutPin, "Voltage"); % Create output channel for mirror movements
 varName = dqID + "_" + aInPin; % Assemble variable name of input for conveninent table indexing
 
-% Output definition
+% DAQ output (system input) definition
 t = linspace(0, 1, dq.Rate);
-fx = 1;
-Vacx = 1;
-Vdrive = Vacx*sin(2*pi*fx*t);
+
+Vdc = 6;
+Vacx = 3;
+Vacy = 1;
+fx = 100;
+fy = 1000;
+phiy = 0.8;
+
+Vdrive = Vdc + Vacx*sin(2*pi*fx*t) + Vacy*sin(2*pi*fy*t + phiy);
 
 % Write output for continuous movements
-disp("Writing output to DAQ continuously.")
+disp("Writing output to DAQ continuously.") 
 start(dq, 'repeatoutput');
 write(dq, Vdrive');
 
