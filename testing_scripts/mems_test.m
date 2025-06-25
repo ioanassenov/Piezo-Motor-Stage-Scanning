@@ -21,11 +21,11 @@ t = linspace(0, 1, dq.Rate);
 % fy = 2;
 % phiy = 0.8;
 
-Vdc = 3;
-Vacx = 4;
-Vacy = 3;
-fx = 64;
-fy = 105;
+Vdc = 0;
+Vacx = 10;
+Vacy = 0;
+fx = 1;
+fy = 0;
 phiy = 0.8;
 
 
