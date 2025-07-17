@@ -10,8 +10,10 @@
 % Program output: rawData.mat -> a cell array with the raw data from the
 % photomultiplier tube organized by row.
 
+try
+    device.Disconnect(); % Disconnect device if it hasn't been already
+end
 clear; clc;
-
 %% DAQ Setup
 dq = daq("ni"); % Initialize a DataAcquisition interface object for an NI device
 dq.Rate = 250e3;         % Set rate [Hz] - 2e6 with OLDHAM5 and 250e3 with OLDHAM3
@@ -64,7 +66,7 @@ try
     %% Define movement parameters
     % Define new drive parameters object and configure it
     driveParams = Thorlabs.MotionControl.KCube.InertialMotorCLI.DriveParams;
-    driveParams.StepRate = 1500; % can go up to 2500 [steps/s]
+    driveParams.StepRate = 2000; % can go up to 2500 [steps/s]
     device.SetDriveParameters(PD1, driveParams); % Apply drive parameters to PD1
     device.SetDriveParameters(PD2, driveParams); % Apply drive parameters to PD2
 
@@ -75,11 +77,11 @@ try
     % ========================== START Movements ==========================
     % To scan a single row, set the endYPos equal to the increment
 
-    increment = 20;    % [steps] define distance moved between rows
-    endXPos   = 10500; % [steps] define the final X value of the rows
-    xerr      = 10100;  % [steps] additional steps for reverse motion
-    startYPos = 3900;  % [steps] desired y offset from origin to start scan from.
-    endYPos   = 8300;  % [steps] define the final Y value of the columns from startYPos   
+    increment = 25;    % [steps] define distance moved between rows
+    endXPos   = 11800; % [steps] define the final X value of the rows
+    xerr      = 3500;  % [steps] additional steps for reverse motion
+    startYPos = 650;  % [steps] desired y offset from origin to start scan from.
+    endYPos   = 8800;  % [steps] define the final Y value of the columns from startYPos   
     % Single row scan settings:
     % startYPos = 0;
     % endYPos = increment;
