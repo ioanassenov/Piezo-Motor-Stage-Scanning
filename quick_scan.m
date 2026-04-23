@@ -5,11 +5,14 @@
 % Description: This file is used as a test to both move the stages and
 % record data from the photomultiplier tube at the same time. It scans
 % along a given width and height (in steps) while continuously collecting
-% data. It then parses it and displays the data in a heatmap visualization.
+% data.
 %
 % Program output: rawData.mat -> a cell array with the raw data from the
 % photomultiplier tube organized by row.
 
+try
+    device.Disconnect(); % Disconnect device if it hasn't been already
+end
 clear; clc;
 
 %% Scan parameters
@@ -131,7 +134,7 @@ try
         pause(shortpause); % Infinitesimal pause needed for DAQ to find its data (why?)
         rawRowData = read(dq, "all", OutputFormat="Matrix");
 
-        % Stop data acquistion for current row
+        % Stop data acquisition for current row
         stop(dq);
         flush(dq);
         pause(longpause);

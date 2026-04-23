@@ -25,7 +25,7 @@ dq.Rate = 2e6;
 %% I/O Specification
 % Specify DAQ id, this depends on the PCI card that it is connected to and
 % can be fetched with the daqlist() function.
-dqID = "PCIE6374_BNC";
+dqID = "PCI6221_bnc";
 
 % Define DAQ input and outputs
 in1 = addinput(dq, dqID, "ai0", "Voltage");
@@ -43,5 +43,6 @@ dataAvg = mean(data.ai0)
 
 %% Data Collection (Continuous)
 start(dq, "continuous");
-for i=0:1:100
-    
+
+stop(dq);
+flush(dq);
