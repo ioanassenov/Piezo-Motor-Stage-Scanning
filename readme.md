@@ -6,7 +6,7 @@ Piezoelectric Inertial Drive Stages made by Thorlabs.
 ## Notable Files
 - `quick_scan.m` Scans a target in 2D and generates a raw data scan file.
 - `data_processing.m` Used to process the output of the above script into an image.
-- `testing_scripts/` Contains test scripts that can be used as guides on the libraries.
+- `testing_scripts/` Contains test scripts and old precursor scripts that can be useful as guides for the libraries.
 
 
 ## Movement

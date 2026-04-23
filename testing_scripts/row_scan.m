@@ -11,7 +11,8 @@ clear;
 %% DAQ Setup
 dq = daq("ni"); % Initialize a DataAcquisition interface object for an NI device
 dq.Rate = 2e6;  % Set rate (Hertz)
-dqID = "PCIE6374_BNC"; % DAQ ID number is based on the PCI card
+% dqID = "PCIE6374_BNC"; % DAQ ID number is based on the PCI card
+dqID = "Dev1";
 in1 = addinput(dq, dqID, "ai0", "Voltage"); % Create input channel that we read data from
 
 %% Stage Movement Setup
@@ -76,7 +77,7 @@ try
         % Read the data for 1ms, rename the variable for convenience, take
         % the mean value, and store it for the given position.
         rawData = read(dq, seconds(100e-6));
-        rawData = renamevars(rawData, "PCIE6374_BNC_ai0", "ai0");
+        rawData = renamevars(rawData, dqID + "_ai0", "ai0");
         data(i/increment + 1) = mean(rawData.ai0); % Store the averaged data for the current position
         disp(data(i/increment + 1))
         
