@@ -12,6 +12,7 @@
 
 try
     device.Disconnect(); % Disconnect device if it hasn't been already
+    fprintf("Disconnected previously connected device!")
 end
 clear; clc;
 
