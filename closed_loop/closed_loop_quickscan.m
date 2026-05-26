@@ -14,6 +14,14 @@
 
 clear; close all; clc;
 
+% State machine state definitions
+INITIALIZE = 100;
+HOMING = 110;
+ROWSCAN = 201;
+ROWRETURN = 210;
+NEXTROW = 220;
+STOP = 999;
+
 % DAQ Setup
 dq = daq("ni"); % Initialize a DataAcquisition interface object for an NI device
 dq.Rate = 250e3;         % Set rate [Hz] - 2e6 with OLDHAM5 and 250e3 with OLDHAM3
@@ -32,40 +40,54 @@ outx = addoutput(dq, dqID, xpin, "Voltage");             % Output channel for x 
 outy = addoutput(dq, dqID, ypin, "Voltage");             % Output channel for y axis.
 limswitch = addinput(dq, dqID, limswitchPin, "Digital"); % Output channel for limit switch (digital)
 
-fs = dq.Rate;
+fs = dq.Rate/20; % Fewest possible ScansAvailableFcnCount (50 ms duration)
 dq.ScansAvailableFcnCount = fs;
-dq.ScansAvailableFcn = @(dq, evt) stateEval(dq, evt);
+dq.ScansAvailableFcn = @(dq, evt, accu_data) stateEval(dq, evt, accu_data);
 
-function stateEval(dq, evt)
-    fprintf("Scans met!\n");
-    read_data = dq.read("all");
-    accu_data = [accu_data; read_data]; % Append new data from last read to accumulator
-    limswitchState = 0;
-    fprintf("State of digital pin: %i\n", limswitchState)
+% Callback function once available scans run out (125000)
+% Contains state machine to control scan.
+function stateEval(dq, evt, accu_data)
+    fprintf("Running stateEval!\n"); % DEBUG
+    
+    read_data = dq.read("all"); % New data since last read
+    accu_data = [accu_data; read_data]; % Append new data to accumulator
+    
+    switch state
+        case INITIALIZE
+            fprintf("In INITIALIZE state!");
+            state = HOMING;
+        case HOMING
+            fprintf("In HOMING state!");
+        case ROWSCAN
+        case ROWRETURN
+        case NEXTROW
+        case STOP
+        otherwise
+            error("Program entered undefined state!");
+    end
 end
-
 
 % Prime controller (set voltages to 0V for 12 seconds)
 % Set initial voltages to 0V for x and y axes
 write(dq, [0, 0]);
-fprintf("Priming controller: 1 seconds...\n");
-pause(0.01); % Wait for 12 seconds
+% fprintf("Priming controller: 12 seconds...\n");
+% pause(12); % Wait for 12 seconds
 
 % Move x axis for 1 second at 1V;
 fprintf("Beginning continuous acquisition for 12 seconds!\n");
+state = INITIALIZE; % Assign initialization state
 preload(dq, zeros(fs, 2)); % Preload 0 volts into the output pins
 start(dq, "repeatoutput");
 
-while dq.Running
-    pause(0.5)
-    fprintf("Scans acquired = %d\n", dq.NumScansAcquired)
-    if dq.NumScansAcquired > fs*12
-        data = dq.read("all");
-        dq.stop();
-    end
-end
-fprintf("Acquisition stopped after %d scans\n", dq.NumScansAcquired);
+% Initialize the data acumulator
+accum_data = read(dq, "all");
 
-dq.stop();
-dq.flush();
+while dq.Running
+    pause(0.05); % Pause equal to polling rate while we are in running state
+end
+
+fprintf("Acquisition stopped after %d scans.\n", dq.NumScansAcquired);
+
+stop(dq);
+flush(dq);
 fprintf("Program Completed.\n");
