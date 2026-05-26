@@ -2,7 +2,7 @@
 % Filename: quick_scan.m
 % Author: Ioan Assenov
 %
-% Description: This file is used as a test to both move the stages and
+% Description: This file is used to both move the stages and
 % record data from the photomultiplier tube at the same time. It scans
 % along a given width and height (in steps) while continuously collecting
 % data.
