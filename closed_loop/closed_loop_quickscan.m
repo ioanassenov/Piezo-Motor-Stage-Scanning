@@ -18,23 +18,30 @@ clear; close all; clc;
 dq = daq("ni"); % Initialize a DataAcquisition interface object for an NI device
 dq.Rate = 250e3;         % Set rate [Hz] - 2e6 with OLDHAM5 and 250e3 with OLDHAM3
 % dqID = "PCIE6374_BNC"; % (OLDHAM5 Computer)
-% dqID = "Dev1";         % (OLDHAM 5 Computer Alternative)
-dqID = "PCI6221_bnc";    % (OLDHAM3 Computer)
-ainPin = "ai0"; % Photomultiplier tube input pin
-xpin = "ao1";   % Voltage control pin for x axis (channel B on KIM101)
-ypin = "ao0";   % Voltage control pin for y axis (channel A on KIM101)
+dqID = "Dev1";           % (OLDHAM 5 Computer Alternative)
+% dqID = "PCI6221_bnc";  % (OLDHAM3 Computer)
+ainPin = "ai0";                % Photomultiplier tube input pin
+limswitchPin = "port0/line0";  % Limit switch input pin
+xpin = "ao1";                  % Voltage control pin for x axis (channel B on KIM101)
+ypin = "ao0";                  % Voltage control pin for y axis (channel A on KIM101)
 
-in1 = addinput(dq, dqID, ainPin, "Voltage"); % Create input channel that we read data from
-varName = dqID + "_" + ainPin;               % Assemble variable name of input for convenient table indexing
-outx = addoutput(dq, dqID, xpin, "Voltage"); % Output channel for x axis.
-outy = addoutput(dq, dqID, ypin, "Voltage"); % Output channel for y axis.
-limtrigger = addtrigger(dq, "Digital", "StartTrigger", dqID + "/PFI1", "External");
 
-dq.ScansAvailableFcnCount = 12500;
-dq.ScansAvailableFcn = @(src, evt) myfunc(src, evt);
+in1 = addinput(dq, dqID, ainPin, "Voltage");             % Create input channel that we read data from
+varName = dqID + "_" + ainPin;                           % Assemble variable name of input for convenient table indexing
+outx = addoutput(dq, dqID, xpin, "Voltage");             % Output channel for x axis.
+outy = addoutput(dq, dqID, ypin, "Voltage");             % Output channel for y axis.
+limswitch = addinput(dq, dqID, limswitchPin, "Digital"); % Output channel for limit switch (digital)
 
-function myfunc(src, evt)
-    fprintf("Scans met!");
+fs = dq.Rate;
+dq.ScansAvailableFcnCount = fs;
+dq.ScansAvailableFcn = @(dq, evt) stateEval(dq, evt);
+
+function stateEval(dq, evt)
+    fprintf("Scans met!\n");
+    read_data = dq.read("all");
+    accu_data = [accu_data; read_data]; % Append new data from last read to accumulator
+    limswitchState = 0;
+    fprintf("State of digital pin: %i\n", limswitchState)
 end
 
 
@@ -46,12 +53,19 @@ pause(0.01); % Wait for 12 seconds
 
 % Move x axis for 1 second at 1V;
 fprintf("Beginning continuous acquisition for 12 seconds!\n");
-start(dq, "continuous");
+preload(dq, zeros(fs, 2)); % Preload 0 volts into the output pins
+start(dq, "repeatoutput");
+
 while dq.Running
     pause(0.5)
     fprintf("Scans acquired = %d\n", dq.NumScansAcquired)
+    if dq.NumScansAcquired > fs*12
+        data = dq.read("all");
+        dq.stop();
+    end
 end
 fprintf("Acquisition stopped after %d scans\n", dq.NumScansAcquired);
 
 dq.stop();
+dq.flush();
 fprintf("Program Completed.\n");
