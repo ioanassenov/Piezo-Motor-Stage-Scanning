@@ -24,11 +24,12 @@ END = 990;
 STOP = 999;
 
 % DAQ Setup
+daqreset();
 dq = daq("ni"); % Initialize a DataAcquisition interface object for an NI device
 dq.Rate = 250e3;         % Set rate [Hz] - 2e6 with OLDHAM5 and 250e3 with OLDHAM3
 % dqID = "PCIE6374_BNC"; % (OLDHAM5 Computer)
-% dqID = "Dev1";           % (OLDHAM 5 Computer Alternative)
-dqID = "PCI6221_bnc";  % (OLDHAM3 Computer)
+dqID = "Dev1";           % (OLDHAM 5 Computer Alternative)
+% dqID = "PCI6221_bnc";  % (OLDHAM3 Computer)
 ainPin = "ai0";                % Photomultiplier tube input pin
 limswitchPin = "port0/line7";  % Limit switch input pin
 xpin = "ao1";                  % Voltage control pin for x axis (channel B on KIM101)
@@ -54,9 +55,6 @@ write(dq, [0, 0]);
 preload(dq, zeros(125000, 2));
 start(dq, "repeatoutput");
 
-% Initialize the data acumulator
-accu_data = read(dq, "all");
-
 % ------------------- Begin control loop & state machine ------------------
 state = INITIALIZE; % Assign INITIALIZE state
 init_time = tic; % Begin INITIALIZE timer
@@ -67,25 +65,27 @@ while state ~= STOP
         case INITIALIZE
             % Write zero to the output pins for 12 seconds to prime piezo
             % controller (as per KIM101 documentation).
-            preload(dq, zeros(125000, 2));
-            start(dq, "repeatoutput");
-
             if toc(init_time) > 1 % TODO: Wait 12 seconds before starting homing
                 init_time = toc(init_time); % Stop INITIALIZATION state stopwatch
                 
-                state = HOMING;      % Advance state to HOMING
+                state = HOMING;    % Advance state to HOMING
                 homing_time = tic; % Begin HOMING state stopwatch
                 fprintf("State updated: HOMING\n");
                 % Begin HOMING setup, the following code runs only once.
-                flush(dq);
-                stop(dq); % TODO: see if this step is necessary at all or if we can just reassign an output.
-                preload(dq, ones(125000, 2)); % assign 1V to both control pins
+                % assign 1V to both control pins. The line below can be
+                % used to stop and reassign new outputs to daq as required.
+                stop(dq); flush(dq); preload(dq, ones(125000, 2)); start(dq, "repeatoutput");
+                pause(1)
+                % Initialize the data acumulator
+                accu_data = read(dq, "all");
+                
                 % Next part of homing loop continues in the respective case statement
             end
         case HOMING
             new_data = read(dq, "all");
             accu_data = [accu_data; new_data];
-            if accu_data.("PCI_6221_bnc_whatever") == 1
+            limswitchState = accu_data.(dqID + "_" + limswitchPin)(end);
+            if limswitchState == 1
                 homing_time = toc(homing_time); % Stop HOMING state stopwatch
                 state = END; % Advance state to ROWSCAN
                 fprintf("State updated: END\n");
@@ -98,8 +98,7 @@ while state ~= STOP
 
         case END
             % Stop DAQ
-            flush(dq);
-            stop(dq);
+            stop(dq); flush(dq); write(dq, [0,0]);
             state = STOP; % No state other than END should assign STOP or the code will error (by design).
             fprintf("State updated: STOP\n");
         otherwise
