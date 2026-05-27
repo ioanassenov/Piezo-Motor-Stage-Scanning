@@ -47,39 +47,67 @@ write(dq, [0, 0]);
 % fprintf("Priming controller: 12 seconds...\n");
 % pause(12); % Wait for 12 seconds
 
-% Data collection
-fprintf("Beginning continuous acquisition for 12 seconds!\n");
-preload(dq, zeros(125000, 2)); % Preload 0 volts into the output pins
+
+% TODO: Figure out why the hell we need to preload exactly 125000 datapoints.
+% Write zero to the output pins for 12 seconds to prime piezo
+% controller (as per KIM101 documentation).            
+preload(dq, zeros(125000, 2));
 start(dq, "repeatoutput");
 
 % Initialize the data acumulator
 accu_data = read(dq, "all");
 
-% Begin state machine
-state = INITIALIZE; % Assign initialization state
-tic;
-while state ~= END
+% ------------------- Begin control loop & state machine ------------------
+state = INITIALIZE; % Assign INITIALIZE state
+init_time = tic; % Begin INITIALIZE timer
+fprintf("State updated: INITIALIZE\n");
+while state ~= STOP
     pause(0.0000001); % Infinitesimal pause to avoid loop binding
     switch state
         case INITIALIZE
-            new_data = read(dq, "all");
-            accu_data = [accu_data; new_data];
-            if toc > 2 &&  accu_data.("PCI6221_bnc_port0/line7")(end) == 1
-                state=END;
+            % Write zero to the output pins for 12 seconds to prime piezo
+            % controller (as per KIM101 documentation).
+            preload(dq, zeros(125000, 2));
+            start(dq, "repeatoutput");
+
+            if toc(init_time) > 1 % TODO: Wait 12 seconds before starting homing
+                init_time = toc(init_time); % Stop INITIALIZATION state stopwatch
+                
+                state = HOMING;      % Advance state to HOMING
+                homing_time = tic; % Begin HOMING state stopwatch
+                fprintf("State updated: HOMING\n");
+                % Begin HOMING setup, the following code runs only once.
+                flush(dq);
+                stop(dq); % TODO: see if this step is necessary at all or if we can just reassign an output.
+                preload(dq, ones(125000, 2)); % assign 1V to both control pins
+                % Next part of homing loop continues in the respective case statement
             end
         case HOMING
+            new_data = read(dq, "all");
+            accu_data = [accu_data; new_data];
+            if accu_data.("PCI_6221_bnc_whatever") == 1
+                homing_time = toc(homing_time); % Stop HOMING state stopwatch
+                state = END; % Advance state to ROWSCAN
+                fprintf("State updated: END\n");
+            end
         case ROWSCAN
+
         case ROWRETURN
+
         case NEXTROW
+
         case END
-            fprintf("Read high on limit switch! Stopping...");
-            state = STOP;
+            % Stop DAQ
+            flush(dq);
+            stop(dq);
+            state = STOP; % No state other than END should assign STOP or the code will error (by design).
+            fprintf("State updated: STOP\n");
         otherwise
-            error("Entered invalid state!");
+            error("Entered STOP prematurely or invalid state!");
     end
 end
-
-fprintf("Acquisition stopped after %d scans.\n", dq.NumScansAcquired);
+fprintf("Master loop exited.\n");
+% -------------------- End control loop & state machine -------------------
 
 stop(dq);
 flush(dq);
