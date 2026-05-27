@@ -69,7 +69,7 @@ while state ~= STOP
                 homing_time = tic; % Begin HOMING state stopwatch
                 fprintf("State updated: HOMING\n");
                 % Begin HOMING setup, the following code runs only once.
-                movex(dq, 0.12);
+                xMove(dq, 0.12);
                 pause(0.1)
                 % Initialize the data acumulator
                 accu_data = read(dq, "all");
@@ -110,7 +110,7 @@ function halt(dq)
     stop(dq); flush(dq); write(dq, [0,0]);
 end
 
-function movex(dq,speed)
+function xMove(dq,speed)
     global MAX_CTRL_VOLTAGE;
     if abs(speed) > 1
         error("Speed cannot be greater than 1 or less than -1.")
@@ -123,5 +123,18 @@ function movex(dq,speed)
     signal = [speed.*MAX_CTRL_VOLTAGE.*ones(minValQ, 1), zeros(minValQ, 1)];
     preload(dq, signal);
     start(dq, "repeatoutput");
+end
+
+function yMoveStep(dq, steps)
+    global MAX_CTRL_VOLTAGE;
+    % TODO: Implement a stepped y movement for row incrementing. This
+    % should move the y stage a programmable amount of steps every single
+    % time. It would require understanding how fast in steps/second the
+    % stages move at any given voltage. The code would take the form:
+    minValQ = 0.5*dq.Rate; % Minimum value of values required for "repeatoutput"
+    % speed = some arbitrary value in Volts
+    write(dq, [speed, 0]);
+    %pause(steps*speed/[conversion factor from V to steps/s])
+    write(dq, [0,0]);
 end
 % ------------------------ END FUNCTION DEFINITIONS -----------------------
