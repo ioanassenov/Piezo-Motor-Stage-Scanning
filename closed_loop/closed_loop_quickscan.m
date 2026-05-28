@@ -16,7 +16,7 @@ clear; close all; clc;
 
 % --------------------------- Scan parameters -----------------------------
 INCREMENT = 20;    % [steps] define distance moved between rows
-ROWS = 1;          % Quantity of rows to scan (must be at least 1)
+TOTALROWS = 2;          % Quantity of rows to scan (must be at least 1)
 ENDXPOS   = 10800; % [steps] define the final X value of the rows
 % -------------------------------------------------------------------------
 
@@ -33,6 +33,9 @@ STOP = 999;
 % Global Constants definition;
 global MAX_CTRL_VOLTAGE;
 MAX_CTRL_VOLTAGE = 10;
+
+% Initialize empty image data cell array
+rawData = cell(TOTALROWS, 1);
 
 % --------------------------- BEGIN DAQ SETUP -----------------------------
 daqreset();
@@ -53,53 +56,110 @@ limswitch = addinput(dq, dqID, limswitchPin, "Digital"); % Output channel for li
 % ---------------------------- END DAQ SETUP ------------------------------
 
 % --------------------------- BEGIN CONTROL LOOP --------------------------
-state = INITIALIZE; % Assign INITIALIZE state
-init_time = tic; % Begin INITIALIZE timer
-fprintf("State updated: INITIALIZE\n");
-while state ~= STOP
-    pause(0.0000001); % Infinitesimal pause to avoid loop binding
-    switch state
-        case INITIALIZE
-            % Write zero to the output pins for 12 seconds to prime piezo
-            % controller (as per KIM101 documentation).
-            write(dq, [0,0]);
-            if toc(init_time) > 1 % TODO: Wait 12 seconds before starting homing
-                init_time = toc(init_time); % Stop INITIALIZATION state stopwatch
-                state = HOMING;    % Advance state to HOMING
-                homing_time = tic; % Begin HOMING state stopwatch
-                fprintf("State updated: HOMING\n");
-                % Begin HOMING setup, the following code runs only once.
-                xMove(dq, 0.12);
-                pause(0.1)
-                % Initialize the data acumulator
-                accu_data = read(dq, "all");
-                % Next part of homing loop continues in the respective case statement
-            end
-        case HOMING
-            new_data = read(dq, "all");
-            accu_data = [accu_data; new_data];
-            limswitchState = accu_data.(dqID + "_" + limswitchPin)(end);
-            if limswitchState == 1
-                homing_time = toc(homing_time); % Stop HOMING state stopwatch
-                state = ROWSCAN; % Advance state to ROWSCAN
-                rowscan_time = tic;
-                fprintf("State updated: ROWSCAN\n");
-            end
-        case ROWSCAN
-            state = END;
-        case ROWRETURN
+try
+    state = INITIALIZE; % Assign INITIALIZE state
+    init_time = tic; % Begin INITIALIZE timer
+    fprintf("State updated: INITIALIZE\n");
+    while state ~= STOP
+        pause(0.0000001); % Infinitesimal pause to avoid loop binding
+        switch state
+            case INITIALIZE
+                % Write zero to the output pins for 12 seconds to prime piezo
+                % controller (as per KIM101 documentation).
+                write(dq, [0,0]);
+                if toc(init_time) > 1 % TODO: Wait 12 seconds before starting homing
+                    init_time = toc(init_time); % Stop INITIALIZATION state stopwatch
+                    state = HOMING;    % Advance state to HOMING
+                    homing_time = tic; % Begin HOMING state stopwatch
+                    fprintf("State updated: HOMING\n");
+                    % Begin HOMING setup, the following code runs only once.
+                    xMove(dq, -0.12); % This function also begins continuous data acquisition.
+                    pause(0.1)
+                    % Initialize the data buffer
+                    buffer = read(dq, "all");
+                    % Next part of homing loop continues in the respective case statement
+                end
+            case HOMING
+                new_data = read(dq, "all");
+                buffer = [buffer; new_data];
+                limswitchState = buffer.(dqID + "_" + limswitchPin)(end);
+                if limswitchState == 1
+                    halt(dq);
+                    homing_time = toc(homing_time); % Stop HOMING state stopwatch
+                    % Advance state to ROWSCAN
+                    state = ROWSCAN;
+                    rowscan_time = tic;
+                    fprintf("State updated: ROWSCAN\n");
+                    buffer = clearBuffer(buffer);
+                    currentRow = 1;
+                    xMove(dq, 0.5);
+                    pause(1); % Give the stages some time to move off switch before resuming loop.
+                end
 
-        case NEXTROW
+            case ROWSCAN
+                new_data = read(dq, "all");
+                buffer = [buffer; new_data];
+                limswitchState = buffer.(dqID + "_" + limswitchPin)(end);
+                if limswitchState == 1
+                    halt(dq);
+                    rawData{currentRow} = buffer;
+                    rowscan_time = toc(rowscan_time);
+                    fprintf("Completed scanning row in %d seconds.\n", rowscan_time);
+                    % Advance state to ROWRETURN
+                    state = ROWRETURN;
+                    rowreturn_time = tic;
+                    fprintf("State updated: ROWRETURN\n");
+                    buffer = clearBuffer(buffer);
+                    xMove(dq, -0.5);
+                    pause(1);
+                end
 
-        case END
-            halt(dq);
-            state = STOP; % No state other than END should assign STOP or the code will error (by design).
-            fprintf("State updated: STOP\n");
-        otherwise
-            error("Entered STOP prematurely or invalid state!");
+            case ROWRETURN
+                new_data = read(dq, "all");
+                buffer = [buffer; new_data];
+                limswitchState = buffer.(dqID + "_" + limswitchPin)(end);
+                if limswitchState == 1
+                    halt(dq);
+                    rowreturn_time = toc(rowreturn_time);
+                    fprintf("Completed row return in %d seconds.\n", rowreturn_time);
+                    % If this was not last row, keep scanning
+                    % Advance state to ROWRETURN
+                    state = NEXTROW;
+                    rowreturn_time = tic;
+                    fprintf("State updated: NEXTROW\n");
+                end
+
+            case NEXTROW
+                if currentRow ~= TOTALROWS
+                    totalrow_time = rowscan_time + rowreturn_time;
+                    fprintf("Row %i scanned, %i rows remaining.\n", currentRow, TOTALROWS-currentRow);
+                    currentRow = currentRow + 1; % Advance row tracker
+                    state = ROWSCAN;
+                    rowscan_time = tic;
+                    fprintf("State updated: ROWSCAN\n");
+                    xMove(dq, 0.5);
+                    pause(1); % Give the stages some time to move off switch before resuming loop.
+                    buffer = clearBuffer(buffer);
+                    continue;
+                end
+                fprintf("All rows scanned.\n");
+                state = END;
+                fprintf("State updated: END\n");
+
+            case END
+                halt(dq);
+                state = STOP; % No state other than END should assign STOP or the code will error (by design).
+                fprintf("State updated: STOP\n");
+            otherwise
+                error("Entered STOP prematurely or invalid state!");
+        end
     end
+    fprintf("Master loop exited.\n");
+catch err
+    disp("Error has caused the program to stop, disconnecting...")
+    halt(dq);
+    rethrow(err);
 end
-fprintf("Master loop exited.\n");
 % --------------------------- END CONTROL LOOP ----------------------------
 
 fprintf("Program Completed.\n");
@@ -136,5 +196,17 @@ function yMoveStep(dq, steps)
     write(dq, [speed, 0]);
     %pause(steps*speed/[conversion factor from V to steps/s])
     write(dq, [0,0]);
+end
+
+function buffer = clearBuffer(buffer)
+    buffer_width = width(buffer);
+    buffer_vartypes = buffer.Properties.VariableTypes;
+    buffer_varnames = buffer.Properties.VariableNames;
+    buffer_samplerate = buffer.Properties.SampleRate;
+    buffer = timetable( ...
+        Size = [0,size(buffer, 2)], ...
+        VariableTypes = buffer_vartypes, ...
+        VariableNames = buffer_varnames, ...
+        SampleRate = buffer_samplerate);
 end
 % ------------------------ END FUNCTION DEFINITIONS -----------------------
