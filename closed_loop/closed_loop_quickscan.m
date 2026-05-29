@@ -15,9 +15,13 @@
 clear; close all; clc;
 
 % --------------------------- Scan parameters -----------------------------
-INCREMENT = 20;    % [steps] define distance moved between rows
-TOTALROWS = 2;          % Quantity of rows to scan (must be at least 1)
-ENDXPOS   = 10800; % [steps] define the final X value of the rows
+TOTALROWS = 2;  % Quantity of rows to scan (must be at least 1)
+INCREMENT = 20; % [steps] define distance moved between rows
+
+HOMING_SPEED = -0.2;       % Valid values: [-1, 1]
+FORWARD_SCAN_SPEED = 0.5;  % Valid values: [-1, 1]
+REVERSE_SCAN_SPEED = -0.5; % Valid values: [-1, 1]
+INIT_HOLD_TIME = 12;       % [s] Hold duration for controller to initialize (12s required on first run)
 % -------------------------------------------------------------------------
 
 % Control program
@@ -34,11 +38,7 @@ DEBUG = -100;
 % Constants definition;
 global MAX_CTRL_VOLTAGE VOLTS_TO_STEPS;
 MAX_CTRL_VOLTAGE = 10;     % [Volts] Max input voltage for piezo controller
-VOLTS_TO_STEPS = 67;       % [steps/s/V] at 1V for movements less than 1s (Somewhat accurate around 20 step movements)
-HOMING_SPEED = -0.2;       % [Decavolts] Valid values: [-1, 1]
-FORWARD_SCAN_SPEED = 0.5;  % [Decavolts] Valid values: [-1, 1]
-REVERSE_SCAN_SPEED = -0.5; % [Decavolts] Valid values: [-1, 1]
-INIT_HOLD_TIME = 12.1;     % [s] Length of hold for controller to initialize
+VOLTS_TO_STEPS = 67;       % [steps/s/V] Somewhat accurate around 20 step movements
 
 % Initialize empty image data cell array
 rawData = cell(TOTALROWS, 1);
@@ -50,11 +50,11 @@ dq.Rate = 250e3;         % Set rate [Hz] - 2e6 with OLDHAM5 and 250e3 with OLDHA
 % dqID = "PCIE6374_BNC"; % (OLDHAM5 Computer)
 dqID = "Dev1";           % (OLDHAM 5 Computer Alternative)
 % dqID = "PCI6221_bnc";  % (OLDHAM3 Computer)
-ainPin = "ai0";                % Photomultiplier tube input pin
+ainPin = "ai0";                % Photomultiplier tube input (data) pin
 limswitchPin = "port0/line7";  % Limit switch input pin
 xPin = "ao0";                  % Voltage control pin for x axis (channel A on KIM101)
 yPin = "ao1";                  % Voltage control pin for y axis (channel B on KIM101)
-in1 = addinput(dq, dqID, ainPin, "Voltage");             % Create input channel that we read data from
+in1 = addinput(dq, dqID, ainPin, "Voltage");             % Create data input channel
 varName = dqID + "_" + ainPin;                           % Assemble variable name of input for convenient table indexing
 outx = addoutput(dq, dqID, xPin, "Voltage");             % Output channel for x axis.
 outy = addoutput(dq, dqID, yPin, "Voltage");             % Output channel for y axis.
@@ -64,90 +64,76 @@ limswitch = addinput(dq, dqID, limswitchPin, "Digital"); % Output channel for li
 % --------------------------- BEGIN CONTROL LOOP --------------------------
 try
     state = INITIALIZE; % Assign INITIALIZE state
-    init_time = tic; % Begin INITIALIZE timer
-    % fprintf("[DEBUG] State updated: INITIALIZE\n");
-    fprintf("Beginning %.1f second hold for controller initialization.\n", INIT_HOLD_TIME);
+    % init_time = tic; fprintf("[DEBUG] State updated: INITIALIZE\n"); % Begin INITIALIZE stopwatch
+    totalscan_time = tic; % Begin master scan stopwatch
+    fprintf("Commencing %.1f second hold for controller initialization.\n", INIT_HOLD_TIME);
     
     while state ~= STOP
-        pause(0.0000001); % Infinitesimal pause to avoid loop binding
+        pause(100e-9); % Infinitesimal pause to avoid loop binding (could be made smaller?)
         switch state
             case INITIALIZE
                 % Write zero to the output pins for 12 seconds to prime piezo
                 % controller (as per KIM101 documentation).
                 write(dq, [0,0]);
-                if toc(init_time) > INIT_HOLD_TIME % Wait 12 seconds before starting homing
-                    init_time = toc(init_time); % Stop INITIALIZATION state stopwatch
-                    state = HOMING;    % Advance state to HOMING
-                    homing_time = tic; % Begin HOMING state stopwatch
-                    % fprintf("[DEBUG] State updated: HOMING\n");
-                    % Begin HOMING setup, the following code runs only once.
-                    xMove(dq, HOMING_SPEED); % This function also begins continuous data acquisition.
-                    pause(0.1)
-                    % Initialize the data buffer
-                    buffer = read(dq, "all");
-                    % Next part of homing loop continues in the respective case statement
+                if toc(init_time) > INIT_HOLD_TIME
+                    % init_time = toc(init_time); % Stop INITIALIZATION state stopwatch
+                    state = HOMING; % homing_time = tic; fprintf("[DEBUG] State updated: HOMING\n");
+                    xMove(dq, HOMING_SPEED);
+                    pause(0.0001); % Small pause for data to accumulate
+                    buffer = read(dq, "all"); % Initialize the data buffer
                 end
 
             case HOMING
                 new_data = read(dq, "all");
-                buffer = [buffer; new_data];
+                buffer = [buffer; new_data]; % Continuous data for limswitch detection
                 limswitchState = buffer.(dqID + "_" + limswitchPin)(end);
                 if limswitchState == 1
                     halt(dq);
                     homing_time = toc(homing_time); % Stop HOMING state stopwatch
-                    % Advance state to ROWSCAN
-                    state = ROWSCAN; rowscan_time = tic;
-                    totalrow_time = tic;
+                    state = ROWSCAN; % rowscan_time = tic;
+                    totalrow_time = tic; % Begin timer for total row scan duration
                     % fprintf("[DEBUG] State updated: ROWSCAN\n");
-                    buffer = clearBuffer(buffer);
+                    buffer = clearBuffer(buffer); % TODO: See if these lines are really necessary
                     currentRow = 1;
                     xMove(dq, FORWARD_SCAN_SPEED);
-                    pause(1); % Give the stages some time to move off switch before resuming loop.
+                    pause(1); % Give the stage some time to move off switch before resuming loop.
                 end
 
             case ROWSCAN
                 new_data = read(dq, "all");
-                buffer = [buffer; new_data];
+                buffer = [buffer; new_data]; % Continuous data for limswitch detection and reflection data.
                 limswitchState = buffer.(dqID + "_" + limswitchPin)(end);
                 if limswitchState == 1
                     halt(dq);
                     rawData{currentRow} = buffer;
-                    rowscan_time = toc(rowscan_time);
-                    % fprintf("[DEBUG] Completed scanning row in %d seconds.\n", rowscan_time);
-                    % Advance state to ROWRETURN
-                    state = ROWRETURN; rowreturn_time = tic;
-                    % fprintf("[DEBUG] State updated: ROWRETURN\n");
-                    buffer = clearBuffer(buffer);
+                    % rowscan_time = toc(rowscan_time); fprintf("[DEBUG] Completed scanning row in %d seconds.\n", rowscan_time);
+                    state = ROWRETURN; % rowreturn_time = tic; fprintf("[DEBUG] State updated: ROWRETURN\n");
+                    buffer = clearBuffer(buffer); % TODO: See if these lines are really necessary
                     xMove(dq, REVERSE_SCAN_SPEED);
-                    pause(1);
+                    pause(1); % Give the stage some time to move off switch before resuming loop.
                 end
 
             case ROWRETURN
                 new_data = read(dq, "all");
-                buffer = [buffer; new_data];
+                buffer = [buffer; new_data]; % Continuous data for limswitch detection
                 limswitchState = buffer.(dqID + "_" + limswitchPin)(end);
                 if limswitchState == 1
                     halt(dq);
-                    rowreturn_time = toc(rowreturn_time);
-                    % fprintf("[DEBUG] Completed row return in %d seconds.\n", rowreturn_time);
-                    % Advance state to NEXTROW
                     state = NEXTROW;
-                    rowreturn_time = tic;
+                    % rowreturn_time = toc(rowreturn_time); fprintf("[DEBUG] Completed row return in %d seconds.\n", rowreturn_time);
                     % fprintf("[DEBUG] State updated: NEXTROW\n");
                 end
 
             case NEXTROW
-                totalrow_time = toc(totalrow_time);
+                totalrow_time = toc(totalrow_time); % Stop total row stopwatch
                 rows_remaining = TOTALROWS - currentRow;
                 time_remaining = totalrow_time * rows_remaining;
                 fprintf("Row %i/%i scanned in %.3f seconds. ~%im %is remaining.\n", currentRow, TOTALROWS, totalrow_time, floor(time_remaining/60), int16(mod(time_remaining, 60)));
                 if currentRow ~= TOTALROWS
                     currentRow = currentRow + 1; % Advance row tracker
                     yMoveSteps(dq, INCREMENT); % Move the y stage for the next row
-                    state = ROWSCAN;
-                    rowscan_time = tic;
+                    state = ROWSCAN; % rowscan_time = tic; fprintf("[DEBUG] State updated: ROWSCAN\n");
                     totalrow_time = tic;
-                    % fprintf("[DEBUG] State updated: ROWSCAN\n");
                     xMove(dq, FORWARD_SCAN_SPEED);
                     pause(1); % Give the stages some time to move off switch before resuming loop.
                     buffer = clearBuffer(buffer);
@@ -182,21 +168,32 @@ catch err
 end
 % --------------------------- END CONTROL LOOP ----------------------------
 
+% Display wrap up stats
+totalscan_time = toc(totalscan_time);
 fprintf("Program Completed.\n");
+fprintf("Scanned %d row(s) in %d min %f sec.\n", currentRow, int16(totalscan_time/60), mod(totalscan_time, 60))
+
+% Save scan file in current directory
+t = datetime;
+t.Format = 'yyyy-MM-dd''T''HHmm';
+filename = strcat("scan",string(t),".mat");
+save(filename, "rawData");
+fprintf("Saved scan data to %s\n", filename);
+
 
 % ----------------------- BEGIN FUNCTION DEFINITIONS ----------------------
 function halt(dq)
-    % Stop, flush, and write 0 on DAQ to stop any stage movements.
+% Stop, flush, and write 0 on DAQ to stop any stage movements.
     stop(dq); flush(dq); write(dq, [0,0]);
 end
 
 function xMove(dq,speed)
+% Move x axis and run continous data acquisition simulatenously    
     global MAX_CTRL_VOLTAGE;
     if abs(speed) > 1
         error("Speed cannot be greater than 1 or less than -1.")
     end
     % Restart DAQ for continuous operation at requested speed.
-    % Speed specified as value from -1 to 1.
     stop(dq); flush(dq);
     minValQ = 0.5*dq.Rate; % Minimum value of values required for "repeatoutput"
     % First column of signal controls the ao0 (xPin) and second column ao1 (yPin)
@@ -206,21 +203,24 @@ function xMove(dq,speed)
 end
 
 function yMoveSteps(dq, steps)
+% Move y axis given number of steps (approximately)
     global MAX_CTRL_VOLTAGE VOLTS_TO_STEPS;
-    yVoltage = 1;
+    % Volts to steps conversion factor is approximately accurate around 20 steps
+    yVoltage = 1; % Command voltage fixed, pause duration varied.
     halt(dq);
     write(dq, [0, yVoltage]);
+    % Pause to move the approximate number of steps.
     pause(steps*yVoltage/VOLTS_TO_STEPS);
     write(dq, [0,0]);
 end
 
 function buffer = clearBuffer(buffer)
-    buffer_width = width(buffer);
+% Clear the buffer while preserving variable types, names, and sample rate
     buffer_vartypes = buffer.Properties.VariableTypes;
     buffer_varnames = buffer.Properties.VariableNames;
     buffer_samplerate = buffer.Properties.SampleRate;
     buffer = timetable( ...
-        Size = [0,size(buffer, 2)], ...
+        Size = [0,width(buffer)], ...
         VariableTypes = buffer_vartypes, ...
         VariableNames = buffer_varnames, ...
         SampleRate = buffer_samplerate);
