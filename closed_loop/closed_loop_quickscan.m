@@ -15,13 +15,13 @@
 clear; close all; clc;
 
 % --------------------------- Scan parameters -----------------------------
-TOTALROWS = 2;  % Quantity of rows to scan (must be at least 1)
+TOTALROWS = 10;  % Quantity of rows to scan (must be at least 1)
 INCREMENT = 20; % [steps] define distance moved between rows
 
-HOMING_SPEED = -0.2;       % Valid values: [-1, 1]
+HOMING_SPEED = -0.5;       % Valid values: [-1, 1]
 FORWARD_SCAN_SPEED = 0.5;  % Valid values: [-1, 1]
-REVERSE_SCAN_SPEED = -0.5; % Valid values: [-1, 1]
-INIT_HOLD_TIME = 12;       % [s] Hold duration for controller to initialize (12s required on first run)
+REVERSE_SCAN_SPEED = -0.8; % Valid values: [-1, 1]
+INIT_HOLD_TIME = 0;       % [s] Hold duration for controller to initialize (12s required on first run)
 % -------------------------------------------------------------------------
 
 % Control program
@@ -64,7 +64,7 @@ limswitch = addinput(dq, dqID, limswitchPin, "Digital"); % Output channel for li
 % --------------------------- BEGIN CONTROL LOOP --------------------------
 try
     state = INITIALIZE; % Assign INITIALIZE state
-    % init_time = tic; fprintf("[DEBUG] State updated: INITIALIZE\n"); % Begin INITIALIZE stopwatch
+    init_time = tic; fprintf("Initializing controller.\n"); % Begin INITIALIZE stopwatch
     totalscan_time = tic; % Begin master scan stopwatch
     fprintf("Commencing %.1f second hold for controller initialization.\n", INIT_HOLD_TIME);
     
@@ -76,10 +76,11 @@ try
                 % controller (as per KIM101 documentation).
                 write(dq, [0,0]);
                 if toc(init_time) > INIT_HOLD_TIME
+                    fprintf("Initialization hold completed, beginning homing.\n");
                     % init_time = toc(init_time); % Stop INITIALIZATION state stopwatch
                     state = HOMING; % homing_time = tic; fprintf("[DEBUG] State updated: HOMING\n");
                     xMove(dq, HOMING_SPEED);
-                    pause(0.0001); % Small pause for data to accumulate
+                    pause(0.1); % Small pause for data to accumulate
                     buffer = read(dq, "all"); % Initialize the data buffer
                 end
 
@@ -89,7 +90,8 @@ try
                 limswitchState = buffer.(dqID + "_" + limswitchPin)(end);
                 if limswitchState == 1
                     halt(dq);
-                    homing_time = toc(homing_time); % Stop HOMING state stopwatch
+                    % homing_time = toc(homing_time); % Stop HOMING state stopwatch
+                    fprintf("Homing completed, beginning scan of %i rows.\n", TOTALROWS);
                     state = ROWSCAN; % rowscan_time = tic;
                     totalrow_time = tic; % Begin timer for total row scan duration
                     % fprintf("[DEBUG] State updated: ROWSCAN\n");
