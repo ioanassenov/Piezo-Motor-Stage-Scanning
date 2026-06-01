@@ -15,12 +15,12 @@
 clear; close all; clc;
 
 % --------------------------- Scan parameters -----------------------------
-TOTALROWS = 10;  % Quantity of rows to scan (must be at least 1)
+TOTALROWS = 5;  % Quantity of rows to scan (must be at least 1)
 INCREMENT = 20; % [steps] define distance moved between rows
 
 HOMING_SPEED = -0.5;       % Valid values: [-1, 1]
 FORWARD_SCAN_SPEED = 0.5;  % Valid values: [-1, 1]
-REVERSE_SCAN_SPEED = -0.8; % Valid values: [-1, 1]
+REVERSE_SCAN_SPEED = -1; % Valid values: [-1, 1]
 INIT_HOLD_TIME = 0;       % [s] Hold duration for controller to initialize (12s required on first run)
 % -------------------------------------------------------------------------
 
@@ -65,7 +65,6 @@ limswitch = addinput(dq, dqID, limswitchPin, "Digital"); % Output channel for li
 try
     state = INITIALIZE; % Assign INITIALIZE state
     init_time = tic; fprintf("Initializing controller.\n"); % Begin INITIALIZE stopwatch
-    totalscan_time = tic; % Begin master scan stopwatch
     fprintf("Commencing %.1f second hold for controller initialization.\n", INIT_HOLD_TIME);
     
     while state ~= STOP
@@ -78,47 +77,48 @@ try
                 if toc(init_time) > INIT_HOLD_TIME
                     fprintf("Initialization hold completed, beginning homing.\n");
                     % init_time = toc(init_time); % Stop INITIALIZATION state stopwatch
-                    state = HOMING; % homing_time = tic; fprintf("[DEBUG] State updated: HOMING\n");
+                    state = HOMING; homing_time = tic;
                     xMove(dq, HOMING_SPEED);
                     pause(0.1); % Small pause for data to accumulate
-                    buffer = read(dq, "all"); % Initialize the data buffer
+                    buffer = read(dq, "all", OutputFormat="Matrix"); % Initialize the data buffer
                 end
 
             case HOMING
-                new_data = read(dq, "all");
+                new_data = read(dq, "all", OutputFormat="Matrix");
                 buffer = [buffer; new_data]; % Continuous data for limswitch detection
-                limswitchState = buffer.(dqID + "_" + limswitchPin)(end);
+                limswitchState = buffer(end, 2);
                 if limswitchState == 1
                     halt(dq);
-                    % homing_time = toc(homing_time); % Stop HOMING state stopwatch
-                    fprintf("Homing completed, beginning scan of %i rows.\n", TOTALROWS);
+                    homing_time = toc(homing_time); % Stop HOMING state stopwatch
+                    fprintf("Homing completed in %.2f seconds, beginning scan of %i rows.\n", homing_time, TOTALROWS);
+                    totalscan_time = tic; % Begin master scan stopwatch
                     state = ROWSCAN; % rowscan_time = tic;
                     totalrow_time = tic; % Begin timer for total row scan duration
                     % fprintf("[DEBUG] State updated: ROWSCAN\n");
-                    buffer = clearBuffer(buffer); % TODO: See if these lines are really necessary
+                    buffer = [];
                     currentRow = 1;
                     xMove(dq, FORWARD_SCAN_SPEED);
                     pause(1); % Give the stage some time to move off switch before resuming loop.
                 end
 
             case ROWSCAN
-                new_data = read(dq, "all");
+                new_data = read(dq, "all", OutputFormat="Matrix");
                 buffer = [buffer; new_data]; % Continuous data for limswitch detection and reflection data.
-                limswitchState = buffer.(dqID + "_" + limswitchPin)(end);
+                limswitchState = buffer(end, 2);
                 if limswitchState == 1
                     halt(dq);
                     rawData{currentRow} = buffer;
                     % rowscan_time = toc(rowscan_time); fprintf("[DEBUG] Completed scanning row in %d seconds.\n", rowscan_time);
                     state = ROWRETURN; % rowreturn_time = tic; fprintf("[DEBUG] State updated: ROWRETURN\n");
-                    buffer = clearBuffer(buffer); % TODO: See if these lines are really necessary
+                    buffer = [];
                     xMove(dq, REVERSE_SCAN_SPEED);
                     pause(1); % Give the stage some time to move off switch before resuming loop.
                 end
 
             case ROWRETURN
-                new_data = read(dq, "all");
+                new_data = read(dq, "all", OutputFormat="Matrix");
                 buffer = [buffer; new_data]; % Continuous data for limswitch detection
-                limswitchState = buffer.(dqID + "_" + limswitchPin)(end);
+                limswitchState = buffer(end, 2);
                 if limswitchState == 1
                     halt(dq);
                     state = NEXTROW;
@@ -138,7 +138,7 @@ try
                     totalrow_time = tic;
                     xMove(dq, FORWARD_SCAN_SPEED);
                     pause(1); % Give the stages some time to move off switch before resuming loop.
-                    buffer = clearBuffer(buffer);
+                    buffer = [];
                     continue;
                 end
                 fprintf("All rows scanned.\n");
@@ -152,8 +152,8 @@ try
             
             case DEBUG
                 % To enter the DEBUG case, assign the state manually.
-                pause(1);
                 fprintf("Entered DEBUG state.\n")
+                pause(1);
                 yMoveSteps(dq, 20);
                 halt(dq);
                 state = END;
@@ -162,7 +162,7 @@ try
                 error("Entered STOP prematurely or invalid state!");
         end
     end
-    fprintf("Master loop exited.\n");
+    % fprintf("[DEBUG] Master loop exited.\n");
 catch err
     halt(dq);
     fprintf("Error has caused the program to stop. Last program state: %i\n", state);
@@ -172,8 +172,7 @@ end
 
 % Display wrap up stats
 totalscan_time = toc(totalscan_time);
-fprintf("Program Completed.\n");
-fprintf("Scanned %d row(s) in %d min %f sec.\n", currentRow, int16(totalscan_time/60), mod(totalscan_time, 60))
+fprintf("Scanned %d row(s) in %d min %.3f sec.\n", currentRow, int16(totalscan_time/60), mod(totalscan_time, 60))
 
 % Save scan file in current directory
 t = datetime;
@@ -214,17 +213,5 @@ function yMoveSteps(dq, steps)
     % Pause to move the approximate number of steps.
     pause(steps*yVoltage/VOLTS_TO_STEPS);
     write(dq, [0,0]);
-end
-
-function buffer = clearBuffer(buffer)
-% Clear the buffer while preserving variable types, names, and sample rate
-    buffer_vartypes = buffer.Properties.VariableTypes;
-    buffer_varnames = buffer.Properties.VariableNames;
-    buffer_samplerate = buffer.Properties.SampleRate;
-    buffer = timetable( ...
-        Size = [0,width(buffer)], ...
-        VariableTypes = buffer_vartypes, ...
-        VariableNames = buffer_varnames, ...
-        SampleRate = buffer_samplerate);
 end
 % ------------------------ END FUNCTION DEFINITIONS -----------------------
