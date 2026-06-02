@@ -15,8 +15,8 @@
 clear; close all; clc;
 
 % --------------------------- Scan parameters -----------------------------
-TOTALROWS = 5;  % Quantity of rows to scan (must be at least 1)
-INCREMENT = 20; % [steps] define distance moved between rows
+TOTALROWS = 40;  % Quantity of rows to scan (must be at least 1)
+INCREMENT = 70; % [steps] define distance moved between rows (approximate)
 
 HOMING_SPEED = -0.5;       % Valid values: [-1, 1]
 FORWARD_SCAN_SPEED = 0.5;  % Valid values: [-1, 1]
@@ -36,9 +36,10 @@ STOP = 999;
 DEBUG = -100;
 
 % Constants definition;
-global MAX_CTRL_VOLTAGE VOLTS_TO_STEPS;
-MAX_CTRL_VOLTAGE = 10;     % [Volts] Max input voltage for piezo controller
-VOLTS_TO_STEPS = 67;       % [steps/s/V] Somewhat accurate around 20 step movements
+global MAX_CTRL_VOLTAGE VOLTS_TO_STEPS Y_CTRL_VOLTAGE;
+MAX_CTRL_VOLTAGE = 10; % [Volts] Max input voltage for piezo controller
+VOLTS_TO_STEPS = 76;   % [steps/s/V] Somewhat accurate around 20 step movements
+Y_CTRL_VOLTAGE = 1;    % [Volts] Control voltage for Y stage movements; (+) step counts move up
 
 % Initialize empty image data cell array
 rawData = cell(TOTALROWS, 1);
@@ -63,8 +64,8 @@ limswitch = addinput(dq, dqID, limswitchPin, "Digital"); % Output channel for li
 
 % --------------------------- BEGIN CONTROL LOOP --------------------------
 try
-    state = INITIALIZE; % Assign INITIALIZE state
-    init_time = tic; fprintf("Initializing controller.\n"); % Begin INITIALIZE stopwatch
+    state = DEBUG; % Assign INITIALIZE state (Assign DEBUG to enter debug case)
+    init_time = tic; % Begin INITIALIZE stopwatch
     fprintf("Commencing %.1f second hold for controller initialization.\n", INIT_HOLD_TIME);
     
     while state ~= STOP
@@ -148,15 +149,19 @@ try
             case END
                 halt(dq);
                 state = STOP; % No state other than END should assign STOP or the code will error (by design).
-                % fprintf("[DEBUG] State updated: STOP\n");
+                % Display wrap up stats
+                totalscan_time = toc(totalscan_time);
+                fprintf("Scanned %d row(s) in %d min %.3f sec.\n", currentRow, int16(totalscan_time/60), mod(totalscan_time, 60))
             
             case DEBUG
                 % To enter the DEBUG case, assign the state manually.
                 fprintf("Entered DEBUG state.\n")
-                pause(1);
-                yMoveSteps(dq, 20);
+                pause(INIT_HOLD_TIME);
+                fprintf("Hold completed, moving Y.\n")
+                yMoveSteps(dq, 50);
+                fprintf("Y move completed, exiting.\n")
                 halt(dq);
-                state = END;
+                state = STOP;
 
             otherwise
                 error("Entered STOP prematurely or invalid state!");
@@ -170,14 +175,11 @@ catch err
 end
 % --------------------------- END CONTROL LOOP ----------------------------
 
-% Display wrap up stats
-totalscan_time = toc(totalscan_time);
-fprintf("Scanned %d row(s) in %d min %.3f sec.\n", currentRow, int16(totalscan_time/60), mod(totalscan_time, 60))
-
 % Save scan file in current directory
 t = datetime;
 t.Format = 'yyyy-MM-dd''T''HHmm';
-filename = strcat("scan",string(t),".mat");
+warning('off', 'MATLAB:MKDIR:DirectoryExists'); mkdir scans % Make scans directory if not exist; suppress exist warning.
+filename = strcat("scans/","scan",string(t),".mat");
 save(filename, "rawData");
 fprintf("Saved scan data to %s\n", filename);
 
@@ -189,10 +191,10 @@ function halt(dq)
 end
 
 function xMove(dq,speed)
-% Move x axis and run continous data acquisition simulatenously    
+% Move x axis and run continuous data acquisition simultaneously    
     global MAX_CTRL_VOLTAGE;
     if abs(speed) > 1
-        error("Speed cannot be greater than 1 or less than -1.")
+        error("Speed cannot be greater than 1 or less than -1.");
     end
     % Restart DAQ for continuous operation at requested speed.
     stop(dq); flush(dq);
@@ -205,13 +207,15 @@ end
 
 function yMoveSteps(dq, steps)
 % Move y axis given number of steps (approximately)
-    global MAX_CTRL_VOLTAGE VOLTS_TO_STEPS;
+    global MAX_CTRL_VOLTAGE VOLTS_TO_STEPS Y_CTRL_VOLTAGE;
+    if abs(Y_CTRL_VOLTAGE) > abs(MAX_CTRL_VOLTAGE)
+        error("Y_CTRL_VOLTAGE cannot exceed MAX_CTRL_VOLTAGE.");
+    end
     % Volts to steps conversion factor is approximately accurate around 20 steps
-    yVoltage = 1; % Command voltage fixed, pause duration varied.
     halt(dq);
-    write(dq, [0, yVoltage]);
+    write(dq, [0, sign(steps)*Y_CTRL_VOLTAGE]);
     % Pause to move the approximate number of steps.
-    pause(steps*yVoltage/VOLTS_TO_STEPS);
+    pause(abs(steps*Y_CTRL_VOLTAGE/VOLTS_TO_STEPS)); % Absolute value accounts for (-) voltages
     write(dq, [0,0]);
 end
 % ------------------------ END FUNCTION DEFINITIONS -----------------------

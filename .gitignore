@@ -3,3 +3,4 @@
 scan*.mat
 scan*.png
 *.orig
+scans/
