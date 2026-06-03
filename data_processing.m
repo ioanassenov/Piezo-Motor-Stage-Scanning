@@ -10,7 +10,7 @@
 %% 1) Read file
 clear; clc;
 fprintf("1) Reading scan data...\n")
-filename = "scans/scan2026-06-03T1202.mat";
+filename = "scans/scan2026-06-03T1313.mat";
 filepath = fullfile(filename);
 load(filepath);
 fprintf("|\tSuccessfully loaded scan data: %s\n", filepath);
@@ -69,13 +69,11 @@ fprintf("\n3B) Filled %d unhealthy rows with NaN!\n", length(susRows));
 fprintf("|\tData now has %d rows.\n", length(rawData));
 susRows = [];
 
-%% 3C) Clean up data - Truncate rows with excess entries
+%% 3C) Clean up data - Truncate rows with excess entries & Pad short rows with NaN
 rawData(longRows) = cellfun(@(x) x(1:modeLength), rawData(longRows), "UniformOutput", false);
 fprintf("\n3C) Truncated %d long rows to %d columns!\n", length(longRows), modeLength);
 fprintf("|\tData now has %d rows.\n", length(rawData));
-susRows = [];
 
-%% 3D) Clean up data - Pad short rows with NaN
 rawData(shortRows) = cellfun(@(x) [x; nan(modeLength-length(x), 1)], rawData(shortRows), 'UniformOutput', false);
 fprintf("\n3D) Padded %d short rows with NaN!\n", length(shortRows));
 fprintf("|\tData now has %d rows.\n", length(rawData));

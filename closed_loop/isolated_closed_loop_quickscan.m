@@ -1,12 +1,13 @@
 % Title: Inertial Drive Stage 2 Dimensional Continuous Scan with Sensing
-% Filename: closed_loop_quickscan.m
+% Filename: isolated_closed_loop_quickscan.m
 % Author: Ioan Assenov
 %
 % Description: This file is used to both move the stages and record data
 % from the photomultiplier tube at the same time. It scans along a given
 % width and height (in steps) while continuously collecting data. This
 % script controls the THORLABS stages AND collects reflection data using
-% solely the NI DAQ.
+% solely the NI DAQ. This script attempts to achieve a faster control rate
+% by separating the inputs and outputs into separate task objects: (dqIn, dqOut)
 % 
 %
 % Program output: rawData.mat -> a cell array with the raw data from the
@@ -46,19 +47,24 @@ rawData = cell(TOTALROWS, 1);
 
 % --------------------------- BEGIN DAQ SETUP -----------------------------
 daqreset();
-dq = daq("ni"); % Initialize a DataAcquisition interface object for an NI device
-dq.Rate = 1e6;         % Set rate [Hz] - 2e6 with OLDHAM5 and 250e3 with OLDHAM3
+dqOut = daq("ni");
+dqIn = daq("ni"); % Initialize a DataAcquisition interface object for the inputs
+
+dqIn.Rate = 1e6;         % Set rate [Hz] - 2e6 with OLDHAM5 and 250e3 with OLDHAM3
 % dqID = "PCIE6374_BNC"; % (OLDHAM5 Computer)
 dqID = "Dev1";           % (OLDHAM 5 Computer Alternative)
 % dqID = "PCI6221_bnc";  % (OLDHAM3 Computer)
+
 ainPin = "ai0";                % Photomultiplier tube input (data) pin
 limswitchPin = "port0/line7";  % Limit switch input pin
 xPin = "ao0";                  % Voltage control pin for x axis (channel A on KIM101)
 yPin = "ao1";                  % Voltage control pin for y axis (channel B on KIM101)
-in1 = addinput(dq, dqID, ainPin, "Voltage");             % Create data input channel
-limswitch = addinput(dq, dqID, limswitchPin, "Digital"); % Input channel for limit switch (digital)
-outx = addoutput(dq, dqID, xPin, "Voltage");             % Output channel for x axis.
-outy = addoutput(dq, dqID, yPin, "Voltage");             % Output channel for y axis.
+
+in1 = addinput(dqIn, dqID, ainPin, "Voltage");             % Create data input channel
+limswitch = addinput(dqIn, dqID, limswitchPin, "Digital");  % Input channel for limit switch (digital)
+
+outx = addoutput(dqOut, dqID, xPin, "Voltage");             % Output channel for x axis.
+outy = addoutput(dqOut, dqID, yPin, "Voltage");             % Output channel for y axis.
 % ---------------------------- END DAQ SETUP ------------------------------
 
 % --------------------------- BEGIN CONTROL LOOP --------------------------
@@ -73,22 +79,22 @@ try
             case INITIALIZE
                 % Write zero to the output pins for 12 seconds to prime piezo
                 % controller (as per KIM101 documentation).
-                write(dq, [0,0]);
+                write(dqIn, [0,0]);
                 if toc(init_time) > INIT_HOLD_TIME
                     fprintf("Initialization hold completed, beginning homing.\n");
                     % init_time = toc(init_time); % Stop INITIALIZATION state stopwatch
                     state = HOMING; homing_time = tic;
-                    xMove(dq, HOMING_SPEED);
+                    xMove(dqIn, HOMING_SPEED);
                     pause(0.1); % Small pause for data to accumulate
-                    buffer = read(dq, "all", OutputFormat="Matrix"); % Initialize the data buffer
+                    buffer = read(dqIn, "all", OutputFormat="Matrix"); % Initialize the data buffer
                 end
 
             case HOMING
-                new_data = read(dq, "all", OutputFormat="Matrix");
+                new_data = read(dqIn, "all", OutputFormat="Matrix");
                 buffer = [buffer; new_data]; % Continuous data for limswitch detection
                 limswitchState = buffer(end, 2);
                 if limswitchState == 1
-                    halt(dq);
+                    halt(dqIn);
                     homing_time = toc(homing_time); % Stop HOMING state stopwatch
                     fprintf("Homing completed in %.2f seconds, beginning scan of %i rows.\n", homing_time, TOTALROWS);
                     totalscan_time = tic; % Begin master scan stopwatch
@@ -97,34 +103,32 @@ try
                     % fprintf("[DEBUG] State updated: ROWSCAN\n");
                     buffer = [];
                     currentRow = 1;
-                    xMove(dq, FORWARD_SCAN_SPEED);
+                    xMove(dqIn, FORWARD_SCAN_SPEED);
                     pause(1); % Give the stage some time to move off switch before resuming loop.
                 end
 
             case ROWSCAN
-                new_data = read(dq, "all", OutputFormat="Matrix");
+                new_data = read(dqIn, "all", OutputFormat="Matrix");
                 buffer = [buffer; new_data]; % Continuous data for limswitch detection and reflection data.
                 limswitchState = buffer(end, 2);
                 if limswitchState == 1
                     fprintf("[DEBUG] LIMIT SWITCH READ HIGH!\n"); debug_timer = tic;
-                    halt(dq);
+                    halt(dqIn);
                     fprintf("[DEBUG] DAQ HALTED! %.3fs\n", toc(debug_timer));
                     rawData{currentRow} = buffer;                    
                     state = ROWRETURN;
                     buffer = [];
-                    xMove(dq, REVERSE_SCAN_SPEED);
+                    xMove(dqIn, REVERSE_SCAN_SPEED);
                     pause(1); % Give the stage some time to move off switch before resuming loop.
                 end
 
             case ROWRETURN
-                new_data = read(dq, "all", OutputFormat="Matrix");
+                new_data = read(dqIn, "all", OutputFormat="Matrix");
                 buffer = [buffer; new_data]; % Continuous data for limswitch detection
                 limswitchState = buffer(end, 2);
                 if limswitchState == 1
-                    halt(dq);
+                    halt(dqIn);
                     state = NEXTROW;
-                    % rowreturn_time = toc(rowreturn_time); fprintf("[DEBUG] Completed row return in %d seconds.\n", rowreturn_time);
-                    % fprintf("[DEBUG] State updated: NEXTROW\n");
                 end
 
             case NEXTROW
@@ -134,20 +138,19 @@ try
                 fprintf("Row %i/%i scanned in %.3f seconds. ~%im %is remaining.\n", currentRow, TOTALROWS, totalrow_time, floor(time_remaining/60), int16(mod(time_remaining, 60)));
                 if currentRow ~= TOTALROWS
                     currentRow = currentRow + 1; % Advance row tracker
-                    yMoveSteps(dq, INCREMENT); % Move the y stage for the next row
-                    state = ROWSCAN; % rowscan_time = tic; fprintf("[DEBUG] State updated: ROWSCAN\n");
+                    yMoveSteps(dqIn, INCREMENT); % Move the y stage for the next row
+                    state = ROWSCAN;
                     totalrow_time = tic;
-                    xMove(dq, FORWARD_SCAN_SPEED);
+                    xMove(dqIn, FORWARD_SCAN_SPEED);
                     pause(1); % Give the stages some time to move off switch before resuming loop.
                     buffer = [];
                     continue;
                 end
                 fprintf("All rows scanned.\n");
                 state = END;
-                % fprintf("[DEBUG] State updated: END\n");
 
             case END
-                halt(dq);
+                halt(dqIn);
                 state = STOP; % No state other than END should assign STOP or the code will error (by design).
                 % Display wrap up stats
                 totalscan_time = toc(totalscan_time);
@@ -158,18 +161,17 @@ try
                 fprintf("Entered DEBUG state.\n")
                 pause(INIT_HOLD_TIME);
                 fprintf("Hold completed, moving Y.\n")
-                yMoveSteps(dq, 50);
+                yMoveSteps(dqIn, 50);
                 fprintf("Y move completed, exiting.\n")
-                halt(dq);
+                halt(dqIn);
                 state = STOP;
 
             otherwise
                 error("Entered STOP prematurely or invalid state!");
         end
     end
-    % fprintf("[DEBUG] Master loop exited.\n");
 catch err
-    halt(dq);
+    halt(dqIn);
     fprintf("Error has caused the program to stop. Last program state: %i\n", state);
     rethrow(err);
 end
