@@ -27,6 +27,7 @@ end
 rowLengths = cell2mat(cellfun(@length, rawData, "UniformOutput", false));
 modeLength = mode(rowLengths); % Use mode to determine healthy length
 susRows = find(rowLengths ~= modeLength);
+longRows = []; shortRows = [];
 fprintf("\n2) Performing integrity check on %d rows...\n", length(rawData));
 fprintf("|\tExpected row length is %d as determined by mode\n", modeLength);
 fprintf("|\tFound %d unhealthy rows\n", length(susRows));
@@ -39,8 +40,14 @@ for item=1:length(susRows)
         continue;
     end
     if rowLengths(susRows(item)) ~= modeLength
+        lenDiff = rowLengths(susRows(item))-modeLength;
         fprintf("|\t")
-        warning("Row %d unexpected length of %d, difference: %d.", susRows(item), rowLengths(susRows(item)), rowLengths(susRows(item))-modeLength);
+        warning("Row %d unexpected length of %d, difference: %d.", susRows(item), rowLengths(susRows(item)), lenDiff);
+        if lenDiff > 0
+            longRows = [longRows, susRows(item)];
+            continue;
+        end
+        shortRows = [shortRows, susRows(item)];
         continue
     end
 end
@@ -63,15 +70,14 @@ fprintf("|\tData now has %d rows.\n", length(rawData));
 susRows = [];
 
 %% 3C) Clean up data - Truncate rows with excess entries
-rawData(susRows) = cellfun(@(x) x(1:modeLength), rawData(susRows), "UniformOutput", false);
-fprintf("\n3C) Truncated %d unhealthy rows to %d columns!\n", length(susRows), modeLength);
+rawData(longRows) = cellfun(@(x) x(1:modeLength), rawData(longRows), "UniformOutput", false);
+fprintf("\n3C) Truncated %d long rows to %d columns!\n", length(longRows), modeLength);
 fprintf("|\tData now has %d rows.\n", length(rawData));
 susRows = [];
 
 %% 3D) Clean up data - Pad short rows with NaN
-susLength = length(rawData{susRows(1)});
-rawData(susRows) = cellfun(@(x) [x; nan(modeLength-susLength, 1)], rawData(susRows), 'UniformOutput', false);
-fprintf("\n3D) Padded %d short rows with NaN!\n", length(susRows));
+rawData(shortRows) = cellfun(@(x) [x; nan(modeLength-length(x), 1)], rawData(shortRows), 'UniformOutput', false);
+fprintf("\n3D) Padded %d short rows with NaN!\n", length(shortRows));
 fprintf("|\tData now has %d rows.\n", length(rawData));
 
 %% 3E) Clean up data - Truncate all rows to desired value (left crop)
