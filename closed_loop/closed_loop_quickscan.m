@@ -18,9 +18,9 @@ clear; close all; clc;
 TOTALROWS = 20;  % Quantity of rows to scan (must be at least 1)
 INCREMENT = 100; % [steps] define distance moved between rows (approximate)
 
-HOMING_SPEED = -0.5;       % Valid values: [-1, 1]
-FORWARD_SCAN_SPEED = 0.5;  % Valid values: [-1, 1]
-REVERSE_SCAN_SPEED = -1; % Valid values: [-1, 1]
+HOMING_SPEED = -0.5;      % Valid values: [-1, 1]
+FORWARD_SCAN_SPEED = 0.5; % Valid values: [-1, 1]
+REVERSE_SCAN_SPEED = -1;  % Valid values: [-1, 1]
 INIT_HOLD_TIME = 0;       % [s] Hold duration for controller to initialize (12s required on first run)
 % -------------------------------------------------------------------------
 
