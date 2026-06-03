@@ -15,8 +15,8 @@
 clear; close all; clc;
 
 % --------------------------- Scan parameters -----------------------------
-TOTALROWS = 40;  % Quantity of rows to scan (must be at least 1)
-INCREMENT = 70; % [steps] define distance moved between rows (approximate)
+TOTALROWS = 20;  % Quantity of rows to scan (must be at least 1)
+INCREMENT = 100; % [steps] define distance moved between rows (approximate)
 
 HOMING_SPEED = -0.5;       % Valid values: [-1, 1]
 FORWARD_SCAN_SPEED = 0.5;  % Valid values: [-1, 1]
@@ -64,7 +64,7 @@ limswitch = addinput(dq, dqID, limswitchPin, "Digital"); % Output channel for li
 
 % --------------------------- BEGIN CONTROL LOOP --------------------------
 try
-    state = DEBUG; % Assign INITIALIZE state (Assign DEBUG to enter debug case)
+    state = INITIALIZE; % Assign INITIALIZE state (Assign DEBUG to enter debug case)
     init_time = tic; % Begin INITIALIZE stopwatch
     fprintf("Commencing %.1f second hold for controller initialization.\n", INIT_HOLD_TIME);
     

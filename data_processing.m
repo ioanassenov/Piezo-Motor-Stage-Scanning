@@ -10,14 +10,21 @@
 %% 1) Read file
 clear; clc;
 fprintf("1) Reading scan data...\n")
-filename = "scan2026-06-01T1539.mat";
+filename = "scans/scan2026-06-03T1135.mat";
 filepath = fullfile(filename);
 load(filepath);
 fprintf("|\tSuccessfully loaded scan data: %s\n", filepath);
 
+% Delete limit switch column if it exists (take only first)
+rowWidth = cell2mat(cellfun(@width, rawData, "UniformOutput", false));
+if max(rowWidth) > 1
+    fprintf("|\tScan data contains extra column(s) (might be limit switch state).\n|\tIsolating data column (column 1).\n");
+    rawData = cellfun(@(x) x(:, 1), rawData, "UniformOutput", false);
+end
+
 
 %% 2) Integrity check
-rowLengths = cellfun(@length, rawData);
+rowLengths = cell2mat(cellfun(@length, rawData, "UniformOutput", false));
 modeLength = mode(rowLengths); % Use mode to determine healthy length
 susRows = find(rowLengths ~= modeLength);
 fprintf("\n2) Performing integrity check on %d rows...\n", length(rawData));
@@ -33,7 +40,7 @@ for item=1:length(susRows)
     end
     if rowLengths(susRows(item)) ~= modeLength
         fprintf("|\t")
-        warning("Row %d has an unexpected length of %d, expected %d.", susRows(item), rowLengths(susRows(item)), modeLength);
+        warning("Row %d unexpected length of %d, difference: %d.", susRows(item), rowLengths(susRows(item)), rowLengths(susRows(item))-modeLength);
         continue
     end
 end
@@ -68,7 +75,7 @@ fprintf("\n3D) Padded %d short rows with NaN!\n", length(susRows));
 fprintf("|\tData now has %d rows.\n", length(rawData));
 
 %% 3E) Clean up data - Truncate all rows to desired value (left crop)
-truncLength = 1100000; % This value can be set as desired
+truncLength = 1725000; % This value can be set as desired
 rawData = cellfun(@(x) x(1:truncLength), rawData, "UniformOutput", false);
 fprintf("\n3C) Force truncated all rows to %d columns!\n", truncLength);
 fprintf("|\tData now has %d rows.\n", length(rawData));
