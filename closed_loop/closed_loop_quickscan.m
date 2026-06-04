@@ -187,8 +187,8 @@ fprintf("Saved scan data to %s\n", filename);
 % ----------------------- BEGIN FUNCTION DEFINITIONS ----------------------
 function halt(dq)
 % Stop, flush, and write 0 on DAQ to stop any stage movements.
-    % tic; stop(dq); toc;
-    % tic; flush(dq); toc;
+    tic; stop(dq); toc;
+    tic; flush(dq); toc;
     write(dq, [0,0]);
 end
 

@@ -22,7 +22,7 @@ INCREMENT = 50; % [steps] define distance moved between rows (approximate)
 HOMING_SPEED = -0.5;      % Valid values: [-1, 1]
 FORWARD_SCAN_SPEED = 0.5; % Valid values: [-1, 1]
 REVERSE_SCAN_SPEED = -1;  % Valid values: [-1, 1]
-INIT_HOLD_TIME = 4;       % [s] Hold duration for controller to initialize (12s required on first run)
+INIT_HOLD_TIME = 12;       % [s] Hold duration for controller to initialize (12s required on first run)
 % -------------------------------------------------------------------------
 
 % Control program
@@ -75,20 +75,19 @@ try
     fprintf("Commencing %.1f second hold for controller initialization.\n", INIT_HOLD_TIME);
     
     while state ~= STOP
-        pause(100e-9); % Infinitesimal pause to avoid loop binding
+        pause(10e-9); % Infinitesimal pause to avoid loop binding
         switch state
             case INITIALIZE
                 % Write zero to the output pins for 12 seconds to prime piezo
                 % controller (as per KIM101 documentation).
-                haltDaq();
+                stopMove();
                 if toc(init_time) > INIT_HOLD_TIME
                     fprintf("Initialization hold completed, beginning homing.\n");
                     % init_time = toc(init_time); % Stop INITIALIZATION state stopwatch
-                    state = HOMING;
+                    state = HOMING; homing_time = tic;
                     startRead(); % Start read for limit switch state during homing.
-                    xMove(HOMING_SPEED);
-                    pause(0.01); % Small pause for data to accumulate
-                    buffer = read(dqIn, "all", OutputFormat="Matrix"); % Initialize the data buffer
+                    moveX(HOMING_SPEED);
+                    buffer = [0, 0]; % Initialize the data buffer
                 end
 
             case HOMING
@@ -96,16 +95,16 @@ try
                 buffer = [buffer; new_data]; % Continuous data for limswitch detection
                 limswitchState = buffer(end, 2);
                 if limswitchState == 1
-                    haltDaq();
-                    fprintf("Homing completed in %.2f seconds, beginning scan of %i rows.\n", homing_time, TOTALROWS);
+                    stopMove();
+                    fprintf("Homing completed in %.2f seconds, beginning scan of %i rows.\n", toc(homing_time), TOTALROWS);
                     totalscan_time = tic; % Begin master scan stopwatch
                     state = ROWSCAN; % rowscan_time = tic;
                     totalrow_time = tic; % Begin timer for total row scan duration
                     % fprintf("[DEBUG] State updated: ROWSCAN\n");
+                    currentRow = 1; % Initialize row counter
                     buffer = [];
-                    currentRow = 1;
                     startRead();
-                    xMove(FORWARD_SCAN_SPEED);
+                    moveX(FORWARD_SCAN_SPEED);
                     pause(1); % Give the stage some time to move off switch before resuming loop.
                 end
 
@@ -114,13 +113,11 @@ try
                 buffer = [buffer; new_data]; % Continuous data for limswitch detection and reflection data.
                 limswitchState = buffer(end, 2);
                 if limswitchState == 1
-                    fprintf("[DEBUG] LIMIT SWITCH READ HIGH!\n"); debug_timer = tic;
-                    haltDaq();
-                    fprintf("[DEBUG] DAQ HALTED! %.3fs\n", toc(debug_timer));
+                    stopMove();
                     rawData{currentRow} = buffer;                    
                     state = ROWRETURN;
                     buffer = [];
-                    xMove(REVERSE_SCAN_SPEED);
+                    moveX(REVERSE_SCAN_SPEED);
                     pause(1); % Give the stage some time to move off switch before resuming loop.
                 end
 
@@ -129,7 +126,7 @@ try
                 buffer = [buffer; new_data]; % Continuous data for limswitch detection
                 limswitchState = buffer(end, 2);
                 if limswitchState == 1
-                    haltDaq();
+                    stopMove();
                     state = NEXTROW;
                 end
 
@@ -140,12 +137,12 @@ try
                 fprintf("Row %i/%i scanned in %.3f seconds. ~%im %is remaining.\n", currentRow, TOTALROWS, totalrow_time, floor(time_remaining/60), int16(mod(time_remaining, 60)));
                 if currentRow ~= TOTALROWS
                     currentRow = currentRow + 1; % Advance row tracker
-                    yMoveSteps(INCREMENT); % Move the y stage for the next row
+                    moveYSteps(INCREMENT); % Move the y stage for the next row
                     state = ROWSCAN;
                     totalrow_time = tic;
-                    buffer = [];
+                    buffer = []; % Clear buffer for new row data
                     startRead(); % Flush and restart DAQ for new row data.
-                    xMove(FORWARD_SCAN_SPEED);
+                    moveX(FORWARD_SCAN_SPEED);
                     pause(1); % Give the stages some time to move off switch before resuming loop.
                     continue;
                 end
@@ -153,7 +150,7 @@ try
                 state = END;
 
             case END
-                haltDaq();
+                stopMove();
                 flush(dqIn); stop(dqIn);% Flush and stop data collection DAQ object.
                 state = STOP; % No state other than END should assign STOP or the code will error (by design).
                 % Display wrap up stats
@@ -165,9 +162,9 @@ try
                 fprintf("Entered DEBUG state.\n")
                 pause(INIT_HOLD_TIME);
                 fprintf("Hold completed, moving Y.\n")
-                yMoveSteps(50);
+                moveYSteps(50);
                 fprintf("Y move completed, exiting.\n")
-                haltDaq();
+                stopMove();
                 state = STOP;
 
             otherwise
@@ -175,7 +172,7 @@ try
         end
     end
 catch err
-    haltDaq();
+    stopMove();
     fprintf("Error has caused the program to stop. Last program state: %i\n", state);
     rethrow(err);
 end
@@ -191,13 +188,13 @@ fprintf("Saved scan data to %s\n", filename);
 
 
 % ----------------------- BEGIN FUNCTION DEFINITIONS ----------------------
-function haltDaq()
+function stopMove()
 % Write 0 on DAQ to stop any stage movements.
     global dqOut;
     write(dqOut, [0,0]);
 end
 
-function xMove(speed)
+function moveX(speed)
     global MAX_CTRL_VOLTAGE dqOut;
     if abs(speed) > 1 % Input validation
         error("Speed cannot be greater than 1 or less than -1.");
@@ -206,7 +203,7 @@ function xMove(speed)
     write(dqOut, [speed.*MAX_CTRL_VOLTAGE, 0])
 end
 
-function yMoveSteps(steps)
+function moveYSteps(steps)
 % Move y axis given number of steps (approximately)
     global MAX_CTRL_VOLTAGE VOLTS_TO_STEPS Y_CTRL_VOLTAGE dqOut;
     if abs(Y_CTRL_VOLTAGE) > abs(MAX_CTRL_VOLTAGE)
@@ -222,7 +219,6 @@ end
 function startRead()
 % Stop, flush, and then restart DAQ continuous input.
     global dqIn;
-    stop(dqIn); flush(dqIn);
-    start(dqIn, "continuous");
+    stop(dqIn); flush(dqIn); start(dqIn, "continuous");
 end
 % ------------------------ END FUNCTION DEFINITIONS -----------------------
