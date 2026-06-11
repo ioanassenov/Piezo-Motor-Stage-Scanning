@@ -5,6 +5,7 @@ Piezoelectric Inertial Drive Stages made by Thorlabs.
 
 ## Notable Files
 - `quick_scan.m` Scans a target in 2D and generates a raw data scan file.
+- `closed_loop/isolated_closed_loop_quickscan.m` quickscan.m but with limit switch sensing and using entirely MATLAB DAQ library (no THORLABS). 
 - `data_processing.m` Used to process the output of the above script into an image.
 - `testing_scripts/` Contains test scripts and old precursor scripts that can be useful as guides for the libraries.
 
